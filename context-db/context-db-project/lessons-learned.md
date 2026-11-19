@@ -3,8 +3,9 @@ type: Gotcha
 description:
   Prompt-writing lessons from building context delivery — late-session recall,
   why not to pre-load, rules last and instruction last, testing a prompt on a
-  fresh agent, single-quoting instructions, defining every term, cwd-relative
-  paths. Read before editing anything under skill/context-db/prompts/.
+  fresh agent, single-quoting instructions, defining every term, keeping what
+  the script prints in step with the core texts, cwd-relative paths. Read before
+  editing anything under skill/context-db/prompts/.
 ---
 
 # Lessons Learned
@@ -64,6 +65,24 @@ Fresh agents stalled on three undefined words: "landed" in `wip` (merged, or
 only committed?), "descriptor" in `configure`, and "settle with the user" (wait,
 or proceed?). Each now has a definition or an explicit rule in the prompt. When
 adding a step, ask what a reader with no context would have to guess.
+
+## What the script prints must agree with the core texts
+
+`navigate.md` tells the agent that context-db has no index files to read. A
+folder line that said "its index lists ..." made a fresh agent stop and ask
+which index was meant (2026-11-19). The line now says what the folder holds.
+Before adding wording to the script, read it next to `navigate.md` and
+`not-a-mirror.md`, which are sent with it.
+
+The same trial showed that a section which introduces a new kind of folder must
+name the command for it. "Look into one the way How to Navigate Context-db
+says" left the agent guessing whether `toc` works outside `context-db/`.
+
+Still open from those trials, all in `SKILL.md`: it tells the agent to read the
+`python:` line from a settings file and also to use `toc` whenever it looks
+into `context-db/`, and both agents noticed the clash. It does not say what to
+pass when the user types only flags, or whether a multi-line instruction keeps
+its line breaks.
 
 ## Configure is a menu, not a form
 

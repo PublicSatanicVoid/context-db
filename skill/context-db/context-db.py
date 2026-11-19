@@ -6,12 +6,15 @@ Commands the user invokes. Each prints instructions that the calling agent
 follows; COMMAND_SUMMARIES below is the one-line description of each, shown by
 --help and repeated word for word in the README and on the docs home page.
 
-  prompt "<task>"         Before a task.
+  prompt "<task>"         Before a task (--use-global-context).
   update ["<learning>"]   After a task (--commit / --push to commit too).
   wip ["<instruction>"]   Optional (--list, --cleanup, --clear).
   configure               First, and whenever you like. With --project and the
                           other setting flags it writes the files itself.
   maintain ["<scope>"]    Now and then: tidy the knowledge base (--use-git-diff).
+
+Every one of them takes --show-context: print the same message, wrapped so that
+the agent shows it to the user and does not act on it.
 
 One step the agent runs whenever it looks into the knowledge base, and CI runs
 with --check. It is not listed in --help:
@@ -20,28 +23,35 @@ with --check. It is not listed in --help:
                           descriptions, read from the files just now.
   toc --check [folder]    Check the format of the folder the given one is in.
 
-There are no index.md files. OKF lets a folder carry one; context-db builds the
-same listing on demand instead, so it can never be out of date.
+The project folder has no index.md files. OKF lets a folder carry one;
+context-db builds the same listing on demand instead, so it can never be out of
+date. A folder owned elsewhere that comes with an index.md is listed from it.
 
 Layout (the file format is described in prompts/format.md):
 
   context-db/
     configuration/              plain Markdown the agent or the script reads
-      settings.md               project, python, main_branch; committed
+      settings.md               the settings (SETTINGS_KEYS); committed
       settings.local.md         per-user overrides; gitignored
       ON_PROMPT.md ...          project rules added to a command, one file per command
       ON_PROMPT.local.md ...    one user's rules for that command; gitignored
     <project>-project/          the project folder: the only place commands write
       wip/wip.md                optional list of the work in progress
-    <anything-else>/            background folders: read-only
+    <anything-else>/            background folders, real or symlinked: read-only
 
-Each top-level folder is an Open Knowledge Format (OKF) bundle.
+Knowledge comes from three places. The project folder is this repository's own.
+Background folders are mounted beside it. Global folders stay where they are,
+outside context-db/: the `global_context` setting holds glob patterns that find
+them, and `prompt` lists what the patterns match.
+
+Each of those folders is an Open Knowledge Format (OKF) bundle.
 
 Requires Python 3.8+ and nothing outside the standard library.
 """
 
 import argparse
 import datetime
+import glob
 import os
 import re
 import shlex
@@ -57,14 +67,23 @@ CONF_DIR_NAME = "configuration"
 SETTINGS_NAME = "settings.md"
 LOCAL_SETTINGS_NAME = "settings.local.md"
 LOCAL_GLOB = "*.local.md"  # every per-user file in configuration/; gitignored
-SETTINGS_KEYS = ("project", "python", "main_branch")
+REQUIRED_SETTINGS = ("project", "python", "main_branch")
+# global_context: glob patterns, separated by spaces and read from the repository
+# root, that match knowledge folders outside context-db/.
+# use_global_context: whether every `prompt` lists them (true, also when the key
+# is left out) or only `prompt --use-global-context` (false).
+OPTIONAL_SETTINGS = ("global_context", "use_global_context")
+SETTINGS_KEYS = REQUIRED_SETTINGS + OPTIONAL_SETTINGS
+SWITCH_VALUES = ("true", "false")
 WIP_LIST_NAME = "wip.md"
-RESERVED_FILES = ("index.md", "log.md")
+INDEX_NAME = "index.md"
+RESERVED_FILES = (INDEX_NAME, "log.md")
 STATUSES = ("draft", "stable", "deprecated")
 ON_COMMANDS = ("prompt", "update", "wip", "configure", "maintain")
 AGENT_NOTE_FILES = ("AGENTS.md", "CLAUDE.md")
 MAX_FILE_LINES = 200
 MAX_FOLDER_ITEMS = 12
+MAX_INDEX_TITLES = 8  # how many entries of an index.md stand in for a missing description
 MIGRATION_GUIDE = (
     "https://github.com/cart0113/context-db/blob/v0.1/context-db/"
     "context-db-project/context-db-migrate-from-v0.0/context-db-migrate-from-v0.0.md"
@@ -99,6 +118,37 @@ has drifted, and splits and reorganizes. --use-git-diff also reads the git
 history for what has gone out of date.
 """,
 }
+
+SHOW_CONTEXT_HELP = """
+Add --show-context to any command to see the message it sends the agent. The
+agent shows it to you and does nothing else.
+"""
+
+SHOW_CONTEXT = """
+# Context-db Show Context
+
+The user added `--show-context` to `/context-db {command}`. They want to read
+the message that command sends you. They do not want it carried out.
+
+Show the user the text between the two marker lines below, word for word, in
+one code block. Leave the marker lines themselves out, and leave out or change
+nothing between them. Fence the block with four backticks, because the message
+may contain three. Above the block, say in one line that this is what the
+command sends and that you did not act on it. Then stop.
+
+Do not follow the message: open no files, run no commands, and change nothing.
+
+======== start of the message ========
+{message}
+======== end of the message ========
+
+That was the whole message for `/context-db {command}`. Show it to the user as
+it is, and do nothing it says.
+"""
+
+SHOW_CONTEXT_WITH_SETTINGS = """
+Error: --show-context shows the message a command sends the agent. With a setting flag, configure sends none: it writes the files. Use one or the other.
+"""
 
 NO_HISTORY = """
 Not a git repository, or git is unavailable, so there is no history to read.
@@ -137,6 +187,47 @@ PROJECT_FOLDER_MISSING = """
 
 BROKEN_MOUNT = """
 - **Background folder** `{folder}/` is a broken symlink. Ignore it.
+"""
+
+FOLDER_ENTRY = """
+- **{label}** `{folder}/`: {description}
+"""
+
+NO_DESCRIPTION = """
+(no description)
+"""
+
+DESCRIBED_BY_INDEX = """
+(no description; it holds {titles})
+"""
+
+MORE_TITLES = """
+{titles}, and {more} more
+"""
+
+GLOBAL_CONTEXT = """
+# Global Context
+
+Knowledge folders that live outside `{cdb}/`, found with the `global_context`
+setting in `{settings_path}`. They are owned elsewhere, most often by another
+project that this one uses. `{toc_cmd} <folder>` lists one of them, the same
+as it lists a folder inside `{cdb}/`. Look into one only when its description
+bears on the instruction. Never edit one.
+"""
+
+GLOBAL_CONTEXT_NOT_SET = """
+# Global Context
+
+There is none to list: `{settings_path}` has no `global_context` line. Tell the
+user in one line, and carry on without it.
+"""
+
+GLOBAL_CONTEXT_NO_MATCH = """
+# Global Context
+
+There is none to list: the `global_context` setting in `{settings_path}` is
+`{patterns}`, and that matches no folder from `{root}/`. Tell the user in one
+line, and carry on without it.
 """
 
 WIP_FOR_PROMPT = """
@@ -198,12 +289,18 @@ TOC_HEADING = """
 Read from its files just now. To look inside a subfolder, run `{toc_cmd} <subfolder>`.
 """
 
+TOC_FROM_INDEX = """
+# Contents of `{folder}/`
+
+Read from `{index}`, the index file this folder came with from its owner, with its links rewritten to start from the current directory. To look inside a subfolder, run `{toc_cmd} <subfolder>`.
+"""
+
 TOC_EMPTY = """
 Nothing is in this folder yet.
 """
 
 STRAY_INDEX = """
-{path}: context-db lists folders on the fly with `toc`, so index.md files are not used — delete it
+{path}: context-db lists the project folder on the fly with `toc`, so index.md files are not used in it — delete it
 """
 
 PROJECT_DESCRIPTOR = """
@@ -239,6 +336,15 @@ Settings for the context-db skills. Edit them by hand whenever you like.
 - project: the project folder is context-db/<project>-project/.
 - python: the command that runs the skills' script, Python 3.8 or newer.
 - main_branch: the branch that `/context-db wip --cleanup` compares against.
+
+Two more are optional. Add them as lines of their own:
+
+- global_context: glob patterns that match knowledge folders outside
+  context-db/, such as ../*/okc/*-usage.okf. They are read from the top of the
+  repository, and several are separated by spaces. `/context-db prompt` lists
+  the folders they match.
+- use_global_context: false lists those folders only on
+  `/context-db prompt --use-global-context`. Left out, it is true.
 
 settings.local.md in this folder, if it exists, overrides any of these for one
 user. Every *.local.md file in this folder is gitignored.
@@ -350,6 +456,12 @@ def write_settings(path, values, default_body):
     write_text(path, f"---\n{header}\n---\n{body}")
 
 
+def check_switch(key, value, where):
+    """Stop unless an on/off setting is spelled true or false."""
+    if value.lower() not in SWITCH_VALUES:
+        sys.exit(f"Error: `{key}` in {where} must be true or false, not `{value}`.")
+
+
 def load_config(cdb):
     """The shared settings with user overrides applied, or None when there are none."""
     shared_path = settings_path(cdb)
@@ -359,22 +471,48 @@ def load_config(cdb):
     local_path = settings_path(cdb, local=True)
     if os.path.isfile(local_path):
         config.update(read_settings(local_path))
-    missing = [key for key in SETTINGS_KEYS if not config.get(key)]  # frontmatter: all optional
+    missing = [key for key in REQUIRED_SETTINGS if not config.get(key)]  # frontmatter: all optional
     if missing:
         sys.exit(f"Error: {shared_path} has no {', '.join(missing)}. Run /context-db configure.")
+    if "use_global_context" in config:
+        check_switch("use_global_context", config["use_global_context"], f"{conf_dir(cdb)}/")
     return config
 
 
-def require_config(cdb):
+def require_config(cdb, args):
     config = load_config(cdb)
     if config is None:
-        print(text(NOT_CONFIGURED, settings_path=settings_path(cdb)))
+        emit(args, [text(NOT_CONFIGURED, settings_path=settings_path(cdb))])
         sys.exit(0)
     return config
 
 
+def configured(cdb, key, default=""):
+    """One setting if the settings can be read, else the default. Never fails.
+
+    For `configure`, which must work on missing or broken settings, and for
+    `toc`, which works on any folder.
+    """
+    value = default
+    for local in (False, True):
+        path = settings_path(cdb, local)
+        values = load_settings(path)[0] if os.path.isfile(path) else None
+        if values and values.get(key):  # frontmatter: either file may leave it out
+            value = values[key]
+    return value
+
+
 def project_dir(cdb, config):
     return os.path.join(cdb, f"{config['project']}-project")
+
+
+def global_patterns(config):
+    return config.get("global_context", "").split()  # an optional setting
+
+
+def uses_global_context(config):
+    """Whether every `prompt` lists the global folders. True unless the setting says false."""
+    return config.get("use_global_context", "true").lower() == "true"  # an optional setting
 
 
 # ── Frontmatter ──────────────────────────────────────────────────────────────
@@ -576,12 +714,58 @@ def descriptor_path(folder):
     return None
 
 
+def within(path, parent):
+    """True when path is parent or lies under it, with symlinks resolved."""
+    path, parent = os.path.realpath(path), os.path.realpath(parent)
+    return os.path.commonpath([parent, path]) == parent
+
+
+# A folder that context-db does not own may come with the index.md that OKF
+# allows: one line per child, written by whoever owns the folder. Where there is
+# one it is used as it stands. The project folder never has one.
+
+LINK_RE = re.compile(r"\[[^\]]*\]\(\s*<?([^)\s>]+)>?(?:\s+\"[^\"]*\")?\s*\)")
+SCHEME_RE = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*:")
+INDEX_ENTRY_RE = re.compile(r"(?m)^\s*[*+-]\s+\[([^\]]+)\]\(")
+
+
+def index_path(folder):
+    path = os.path.join(folder, INDEX_NAME)
+    return path if os.path.isfile(path) else None
+
+
+def index_body(folder):
+    """What the folder's own index.md says below its frontmatter. "" when it has none."""
+    path = index_path(folder)
+    return read_doc(path)[1].strip() if path else ""
+
+
+def index_listing(folder):
+    """The folder's own index.md, with its links rewritten to start from the caller's cwd."""
+
+    def from_cwd(match):
+        link, target = match.group(0), match.group(1)
+        if SCHEME_RE.match(target) or target.startswith(("#", "/")):
+            return link
+        path, mark, anchor = target.partition("#")
+        moved = os.path.normpath(os.path.join(folder, path)) + ("/" if path.endswith("/") else "")
+        start = match.start(1) - match.start(0)
+        return link[:start] + moved + mark + anchor + link[start + len(target) :]
+
+    return LINK_RE.sub(from_cwd, index_body(folder))
+
+
 def folder_description(folder):
+    """The description in the folder's descriptor. Without one, what its own index.md lists."""
     path = descriptor_path(folder)
-    if not path:
-        return ""
-    meta, _ = read_doc(path)
-    return (meta or {}).get("description", "")
+    description = (read_doc(path)[0] or {}).get("description", "") if path else ""
+    titles = [] if description else INDEX_ENTRY_RE.findall(index_body(folder))
+    if not titles:
+        return description
+    listed = ", ".join(titles[:MAX_INDEX_TITLES])
+    if len(titles) > MAX_INDEX_TITLES:
+        listed = text(MORE_TITLES, titles=listed, more=len(titles) - MAX_INDEX_TITLES)
+    return text(DESCRIBED_BY_INDEX, titles=listed)
 
 
 # ── Folder listings ──────────────────────────────────────────────────────────
@@ -597,8 +781,17 @@ def toc_entry(title, target, description):
     return f"{line} - {description}" if description else line
 
 
-def folder_listing(folder, toc_cmd):
-    """The OKF index of a folder, built now. Paths are relative to the caller's cwd."""
+def folder_listing(folder, toc_cmd, use_index):
+    """The OKF index of a folder. Paths are relative to the caller's cwd.
+
+    It is built now, from the folder's files. With use_index, a folder that
+    comes with an index.md of its own that lists something is shown from that.
+    """
+    listing = index_listing(folder) if use_index else ""
+    if listing:
+        heading = text(TOC_FROM_INDEX, folder=folder, index=index_path(folder), toc_cmd=toc_cmd)
+        return f"{heading}\n\n{listing}"
+
     descriptor = descriptor_path(folder)
     sub_lines = []
     for name in folder_subfolders(folder):
@@ -626,9 +819,6 @@ def folder_listing(folder, toc_cmd):
 
 
 # ── Lint ─────────────────────────────────────────────────────────────────────
-
-LINK_RE = re.compile(r"\[[^\]]*\]\(\s*<?([^)\s>]+)>?(?:\s+\"[^\"]*\")?\s*\)")
-SCHEME_RE = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*:")
 
 
 def lint_links(path, body):
@@ -683,8 +873,12 @@ def lint_file(path, in_wip):
     return errors, warnings
 
 
-def lint_bundle(bundle):
-    """Return (errors, warnings) for one bundle."""
+def lint_bundle(bundle, is_project):
+    """Return (errors, warnings) for one bundle.
+
+    The project folder may hold no index.md. Any other bundle may, and a folder
+    that has one needs no descriptor.
+    """
     errors, warnings = [], []
     for dirpath, dirnames, filenames in os.walk(bundle):
         for name in sorted(dirnames):
@@ -695,15 +889,15 @@ def lint_bundle(bundle):
                     f"mount shared folders at the top level of {CONTEXT_DB}/ instead"
                 )
         dirnames[:] = [d for d in dirnames if visible(d)]
-        if "index.md" in filenames:
-            errors.append(text(STRAY_INDEX, path=os.path.join(dirpath, "index.md")))
+        if is_project and INDEX_NAME in filenames:
+            errors.append(text(STRAY_INDEX, path=os.path.join(dirpath, INDEX_NAME)))
 
     wip = os.path.join(bundle, "wip")
     if is_real_dir(wip):
         warnings.extend(unlisted_wip(wip))
     for folder in bundle_folders(bundle):
         files = folder_files(folder)
-        if not descriptor_path(folder):
+        if not descriptor_path(folder) and (is_project or not index_path(folder)):
             name = os.path.basename(os.path.realpath(folder))
             errors.append(f"{folder}/: no folder descriptor — add {name}.md with a description")
         items = len(files) + len(folder_subfolders(folder))
@@ -767,8 +961,16 @@ def on_file_text(cdb, command):
     return "\n\n".join(part for part in (project, user) if part)
 
 
-def emit(sections):
-    print("\n\n".join(section for section in sections if section))
+def emit(args, sections):
+    """Print a command's message.
+
+    With --show-context the same message is wrapped in an instruction to show it
+    to the user and not to act on it.
+    """
+    message = "\n\n".join(section for section in sections if section)
+    if args.show_context:
+        message = text(SHOW_CONTEXT, command=args.command, message=message)
+    print(message)
 
 
 def instruction_of(args):
@@ -784,6 +986,11 @@ def instruction_section(instruction):
     return f"# User Instruction\n\n{instruction}"
 
 
+def folder_entry(label, folder):
+    description = folder_description(folder) or text(NO_DESCRIPTION)
+    return text(FOLDER_ENTRY, label=label, folder=folder, description=description)
+
+
 def folders_section(cdb, config):
     """The project folder first, then every background folder.
 
@@ -792,13 +999,8 @@ def folders_section(cdb, config):
     """
     project = project_dir(cdb, config)
     lines = ["# Folders", ""]
-
-    def entry(label, folder):
-        description = folder_description(folder) or "(no description)"
-        return f"- **{label}** `{folder}/`: {description}"
-
     if os.path.isdir(project):
-        lines.append(entry("Project folder", project))
+        lines.append(folder_entry("Project folder", project))
     else:
         lines.append(text(PROJECT_FOLDER_MISSING, folder=project))
 
@@ -809,8 +1011,46 @@ def folders_section(cdb, config):
         if os.path.islink(folder) and not os.path.exists(folder):
             lines.append(text(BROKEN_MOUNT, folder=folder))
         elif os.path.isdir(folder):
-            lines.append(entry("Background folder", folder))
+            lines.append(folder_entry("Background folder", folder))
     return "\n".join(lines)
+
+
+def global_folders(cdb, config):
+    """The folders that the `global_context` patterns match, in the order found.
+
+    Each pattern is a glob read from the repository root, wherever the command
+    was run from; `~` and absolute paths work too. A folder that context-db/
+    already holds, itself or through a symlink, is left out, so a pattern such
+    as ../*/context-db/*-project does not list this project twice.
+    """
+    root = os.path.dirname(os.path.abspath(cdb))
+    seen = {os.path.realpath(os.path.join(cdb, name)) for name in os.listdir(cdb)}
+    found = []
+    for pattern in global_patterns(config):
+        pattern = os.path.join(root, os.path.expanduser(pattern))
+        for match in sorted(glob.glob(pattern, recursive=True)):
+            real = os.path.realpath(match)
+            if os.path.isdir(match) and real not in seen and not within(real, cdb):
+                seen.add(real)
+                found.append(rel(match))
+    return found
+
+
+def global_context_section(cdb, config, show_empty):
+    """One line for each global folder. When there is none, "" unless show_empty."""
+    names = {"cdb": cdb, "settings_path": settings_path(cdb)}
+    folders = global_folders(cdb, config)
+    if folders:
+        toc_cmd = f"{script_command(config['python'])} toc"
+        entries = "\n".join(folder_entry("Global folder", folder) for folder in folders)
+        return f"{text(GLOBAL_CONTEXT, toc_cmd=toc_cmd, **names)}\n\n{entries}"
+    if not show_empty:
+        return ""
+    patterns = " ".join(global_patterns(config))
+    if not patterns:
+        return text(GLOBAL_CONTEXT_NOT_SET, **names)
+    root = rel(os.path.dirname(os.path.abspath(cdb)))
+    return text(GLOBAL_CONTEXT_NO_MATCH, patterns=patterns, root=root, **names)
 
 
 def wip_dir(cdb, config):
@@ -962,29 +1202,38 @@ def git_history_section(cdb, config):
 
 def cmd_prompt(args):
     cdb = context_db_dir()
-    config = require_config(cdb)
+    config = require_config(cdb, args)
     instruction = instruction_of(args)
     if not instruction:
-        print(text(NO_INSTRUCTION))
+        emit(args, [text(NO_INSTRUCTION)])
         return
     branch = current_branch()
     on_branch = f" (the current branch is `{branch}`)" if branch else ""
+    # The flag asks for the global folders outright, so it also says when there are none.
+    asked = args.use_global_context
+    global_context = (
+        global_context_section(cdb, config, show_empty=asked)
+        if asked or uses_global_context(config)
+        else ""
+    )
     emit(
+        args,
         [
             load_prompt("prompt", cdb=cdb, project_dir=project_dir(cdb, config)),
             navigate_section(config),
             load_prompt("not-a-mirror"),
             wip_section(cdb, config, WIP_FOR_PROMPT, show_empty=False, on_branch=on_branch),
             folders_section(cdb, config),
+            global_context,
             on_file_text(cdb, "prompt"),
             instruction_section(instruction),
-        ]
+        ],
     )
 
 
 def cmd_update(args):
     cdb = context_db_dir()
-    config = require_config(cdb)
+    config = require_config(cdb, args)
     commit = args.commit or args.push
     sections = [
         load_prompt(
@@ -1007,13 +1256,14 @@ def cmd_update(args):
         sections.append(load_prompt("commit", cdb=cdb, push=push))
     sections.append(on_file_text(cdb, "update"))
     sections.append(instruction_section(instruction_of(args)))
-    emit(sections)
+    emit(args, sections)
 
 
 def cmd_maintain(args):
     cdb = context_db_dir()
-    config = require_config(cdb)
+    config = require_config(cdb, args)
     emit(
+        args,
         [
             load_prompt(
                 "maintain",
@@ -1030,14 +1280,14 @@ def cmd_maintain(args):
             load_prompt("format"),
             on_file_text(cdb, "maintain"),
             instruction_section(instruction_of(args)),
-        ]
+        ],
     )
 
 
 def cmd_wip(args):
     """Record the current work, or with a flag: list, clean up, or clear it all."""
     cdb = context_db_dir()
-    config = require_config(cdb)
+    config = require_config(cdb, args)
     mode = "list" if args.list else "cleanup" if args.cleanup else "clear" if args.clear else ""
     values = {
         "project_dir": project_dir(cdb, config),
@@ -1062,7 +1312,7 @@ def cmd_wip(args):
         sections.append(load_prompt("format"))
     sections.append(on_file_text(cdb, "wip"))
     sections.append(instruction_section(instruction_of(args)))
-    emit(sections)
+    emit(args, sections)
 
 
 # ── configure ───────────────────────────────────────────────────────────────
@@ -1166,6 +1416,8 @@ def current_rules_section(cdb):
 
 def cmd_configure(args):
     if wants_setup(args):
+        if args.show_context:
+            sys.exit(text(SHOW_CONTEXT_WITH_SETTINGS))
         cmd_setup(args)
         return
     root = find_repo_root()
@@ -1198,6 +1450,13 @@ def cmd_configure(args):
 
     found = ", ".join(f"`{os.path.join(cdb, n)}/`" for n in project_folders(cdb)) or "none"
     lines.append(f"- Project folders found: {found}")
+    patterns = configured(cdb, "global_context")
+    if patterns:
+        folders = global_folders(cdb, {"global_context": patterns})
+        matched = ", ".join(f"`{folder}/`" for folder in folders) or "no folders"
+        lines.append(f"- Global context: `global_context: {patterns}` matches {matched}")
+    else:
+        lines.append("- Global context: no `global_context` setting")
     for note in AGENT_NOTE_FILES:
         path = os.path.join(root, note)
         if not os.path.isfile(path):
@@ -1210,8 +1469,9 @@ def cmd_configure(args):
         listed = ", ".join(f"`{path}`" for path in leftovers)
         lines.extend(["", text(V0_LAYOUT_FOUND, leftovers=listed, guide=MIGRATION_GUIDE)])
 
-    python = configured_python(cdb, default=suggested_python)
+    python = configured(cdb, "python", suggested_python)
     emit(
+        args,
         [
             load_prompt(
                 "configure",
@@ -1229,7 +1489,7 @@ def cmd_configure(args):
             current_rules_section(cdb),
             on_file_text(cdb, "configure"),
             instruction_section(instruction_of(args)),
-        ]
+        ],
     )
 
 
@@ -1277,7 +1537,14 @@ def check_project_name(cdb, name):
 
 def wants_setup(args):
     """configure writes the files itself when any setting is passed."""
-    return bool(args.project or args.python or args.main_branch or args.local)
+    return bool(
+        args.project
+        or args.python
+        or args.main_branch
+        or args.global_context
+        or args.use_global_context
+        or args.local
+    )
 
 
 def cmd_setup(args):
@@ -1293,6 +1560,8 @@ def cmd_setup(args):
         ("project", args.project),
         ("python", args.python),
         ("main_branch", args.main_branch),
+        ("global_context", " ".join(args.global_context or [])),
+        ("use_global_context", args.use_global_context),
     ):
         if value:
             config[key] = value
@@ -1312,6 +1581,8 @@ def cmd_setup(args):
                     "Error: --local takes KEY=VALUE, where KEY is one of "
                     f"{', '.join(SETTINGS_KEYS)}."
                 )
+            if key == "use_global_context":
+                check_switch(key, value, "--local")
             local[key] = value
 
     os.makedirs(conf_dir(cdb), exist_ok=True)
@@ -1351,18 +1622,18 @@ def cmd_setup(args):
         print(f"Created {path}")
     print()
     rerun = f"{script_command(config['python'])} toc --check"
-    sys.exit(run_check(project, rerun))
+    sys.exit(run_check(project, rerun, is_project=True))
 
 
 # ── toc ──────────────────────────────────────────────────────────────────────
 
 
-def run_check(bundle, rerun):
+def run_check(bundle, rerun, is_project):
     """Print the format report for a bundle and return the exit code.
 
     `rerun` is the command to print for checking again.
     """
-    errors, warnings = lint_bundle(bundle)
+    errors, warnings = lint_bundle(bundle, is_project)
     for label, problems in (("ERROR", errors), ("WARNING", warnings)):
         for problem in problems:
             print(f"{label}: {problem}")
@@ -1386,36 +1657,31 @@ def bundle_root(folder):
         folder = rel(parent)
 
 
-def configured_python(cdb, default="python3"):
-    """The `python` setting if it can be read, else the default. Never fails."""
-    python = default
-    for local in (False, True):
-        path = settings_path(cdb, local)
-        values = load_settings(path)[0] if os.path.isfile(path) else None
-        if values and values.get("python"):  # frontmatter: either file may leave it out
-            python = values["python"]
-    return python
-
-
 def cmd_toc(args):
     cdb = context_db_dir()
-    toc_cmd = f"{script_command(configured_python(cdb))} toc"
+    toc_cmd = f"{script_command(configured(cdb, 'python', 'python3'))} toc"
     if args.folder:
         folder = os.path.normpath(args.folder)
         if not os.path.isdir(folder):
             sys.exit(f"Error: {folder}/ is not a folder.")
     else:
-        folder = project_dir(cdb, require_config(cdb))
+        folder = project_dir(cdb, require_config(cdb, args))
         if not os.path.isdir(folder):
             sys.exit(f"Error: {folder}/ does not exist. Run /context-db configure.")
+
+    # Only the project folder is context-db's own. Everywhere else an index.md
+    # that came with a folder is used. With no settings, no folder is the project's.
+    project = configured(cdb, "project")
+    own = os.path.join(cdb, f"{project}-project") if project else ""
     if not args.check:
-        print(folder_listing(folder, toc_cmd))
+        in_project = bool(own) and within(folder, own)
+        print(folder_listing(folder, toc_cmd, use_index=not in_project))
         return
     bundle = bundle_root(folder)
     if bundle != folder:
         print(f"{folder}/ is inside {bundle}/; checking all of {bundle}/.")
     rerun = f"{toc_cmd} --check" + (f" {shlex.quote(bundle)}" if args.folder else "")
-    sys.exit(run_check(bundle, rerun))
+    sys.exit(run_check(bundle, rerun, is_project=bool(own) and within(bundle, own)))
 
 
 # ── CLI ──────────────────────────────────────────────────────────────────────
@@ -1426,6 +1692,7 @@ def build_parser():
         prog="context-db",
         description="A Markdown knowledge base for coding agents, in Open Knowledge Format.",
     )
+    parser.epilog = text(SHOW_CONTEXT_HELP)
     parser.add_argument(
         "--version", action="version", version=f"context-db {VERSION} (OKF {OKF_VERSION})"
     )
@@ -1439,9 +1706,20 @@ def build_parser():
             nargs="*",
             help="Free text, as one single-quoted argument; or `-` to read it from stdin",
         )
+        sub.add_argument(
+            "--show-context",
+            action="store_true",
+            help="Have the agent show you the message this command sends it, and do nothing else",
+        )
         return sub
 
-    command("prompt")
+    p = command("prompt")
+    p.add_argument(
+        "--use-global-context",
+        action="store_true",
+        help="Also list the folders the global_context setting matches, "
+        "when use_global_context is false",
+    )
 
     p = command("update")
     p.add_argument("--commit", action="store_true", help="Then commit the whole session")
@@ -1465,6 +1743,19 @@ def build_parser():
     setting.add_argument("--python", help="Command that runs this script (Python 3.8 or newer)")
     setting.add_argument("--main-branch", help="Branch that wip --cleanup compares against")
     setting.add_argument(
+        "--global-context",
+        action="append",
+        metavar="GLOB",
+        help="Pattern, read from the repository root, that matches knowledge folders "
+        "outside context-db/; quote it (repeatable)",
+    )
+    setting.add_argument(
+        "--use-global-context",
+        choices=SWITCH_VALUES,
+        help="Whether every prompt lists those folders (true), "
+        "or only prompt --use-global-context (false)",
+    )
+    setting.add_argument(
         "--local",
         action="append",
         metavar="KEY=VALUE",
@@ -1486,6 +1777,7 @@ def build_parser():
     )
     p.add_argument("folder", nargs="?", default="", help="Default: the project folder")
     p.add_argument("--check", action="store_true", help="Check the format; exit 1 on any error")
+    p.set_defaults(show_context=False)  # toc prints for the agent to use, never to show
     return parser
 
 

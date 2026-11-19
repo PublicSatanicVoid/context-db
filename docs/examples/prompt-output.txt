@@ -10,8 +10,10 @@ the way How to Navigate Context-db says.
 
 The project folder holds knowledge specific to this repository. Background
 folders hold general reference material shared from elsewhere, such as standards
-and domain knowledge. The same test applies to them: open what bears directly
-on the instruction.
+and domain knowledge. If a Global Context section appears below, it lists
+knowledge folders that live outside this repository, such as another project's
+notes on how to use it. The same test applies to all of them: open what bears
+directly on the instruction.
 
 ## How to use what you find
 

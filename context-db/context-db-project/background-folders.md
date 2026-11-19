@@ -14,13 +14,17 @@ top level of `context-db/` is a background folder: standards or reference
 knowledge that is not specific to this project and usually lives in another
 repository. Each one is an OKF bundle in its own right.
 
+A folder that stays in another repository and is found by a glob pattern is not
+a background folder. That is
+[global context](./design-decisions/global-context.md).
+
 ## Rules
 
 - Mount only at the top level of `context-db/`.
 - Commands never write to a background folder.
 - A folder meant for sharing links only within itself.
 - It needs no preparation: `toc` lists it on demand, so the owning repository
-  generates nothing.
+  generates nothing. If it comes with an `index.md`, `toc` prints that.
 
 Reasons are in
 [links-and-symlinks.md](./design-decisions/links-and-symlinks.md) and

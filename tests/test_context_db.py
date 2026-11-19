@@ -305,6 +305,85 @@ def test_a_stray_index_file_is_an_error(project):
     assert "index.md" not in toc(project)
 
 
+# ── A folder that comes with its own index.md ────────────────────────────────
+
+
+def catalog(folder, entries=("Orders", "Refunds")):
+    """A folder of notes the way a plain OKF tool leaves it: an index.md, no descriptor."""
+    lines = [f"* [{name}]({name.lower()}.md) - All about {name.lower()}" for name in entries]
+    write(folder / "index.md", '---\nokf_version: "0.2"\n---\n\n# Tables\n\n' + "\n".join(lines))
+    for name in entries:
+        write(folder / f"{name.lower()}.md", doc(description=f"Read from {name.lower()}.md"))
+
+
+def test_a_folder_that_comes_with_an_index_is_listed_from_it(project):
+    shared = project / "context-db" / "catalog"
+    catalog(shared)
+    index = shared / "index.md"
+    index.write_text(
+        index.read_text()
+        + "\n* [Billing](./billing/) - Invoices and rates\n"
+        + "* [Spec](https://example.com/spec#tables) - Kept elsewhere\n\n"
+        + "Back to [the top](#tables).\n"
+    )
+    write(shared / "billing" / "rates.md", doc(description="Rate tables"))
+    listing = toc(project, "context-db/catalog")
+    assert listing.startswith(
+        "# Contents of `context-db/catalog/`\n\nRead from `context-db/catalog/index.md`, the index"
+    )
+    assert "context-db.py toc <subfolder>" in listing
+    assert "* [Orders](context-db/catalog/orders.md) - All about orders" in listing
+    assert "* [Billing](context-db/catalog/billing/) - Invoices and rates" in listing
+    assert "(https://example.com/spec#tables)" in listing and "[the top](#tables)" in listing
+    assert "okf_version" not in listing and "Read from orders.md" not in listing
+    sub = toc(project, "context-db/catalog/billing")  # no index of its own, so it is built
+    assert "Read from its files just now." in sub
+    assert "* [Title](context-db/catalog/billing/rates.md) - Rate tables" in sub
+
+
+def test_an_index_that_lists_nothing_is_not_used(project):
+    shared = project / "context-db" / "catalog"
+    catalog(shared)
+    (shared / "index.md").write_text('---\nokf_version: "0.2"\n---\n')
+    listing = toc(project, "context-db/catalog")
+    assert "Read from its files just now." in listing
+    assert "* [Title](context-db/catalog/orders.md) - Read from orders.md" in listing
+
+
+def test_a_folder_with_only_an_index_is_described_by_what_it_lists(project):
+    cdb = project / "context-db"
+    catalog(cdb / "catalog")
+    catalog(cdb / "big", entries=[f"Table{n}" for n in range(11)])
+    catalog(cdb / "described")
+    write(
+        cdb / "described" / "described.md", "---\ntype: Folder\ndescription: Said outright\n---\n"
+    )
+    folders = run(project, "prompt", "x").stdout.split("# Folders")[1]
+    assert (
+        "**Background folder** `context-db/catalog/`: "
+        "(no description; it holds Orders, Refunds)" in folders
+    )
+    assert "it holds Table0, Table1" in folders and "Table7, and 3 more)" in folders
+    assert "**Background folder** `context-db/described/`: Said outright" in folders
+    assert "Read from `context-db/described/index.md`" in toc(project, "context-db/described")
+
+
+def test_only_the_project_folder_may_not_hold_an_index(project):
+    cdb = project / "context-db"
+    catalog(cdb / "catalog")
+    result = run(project, "toc", "context-db/catalog", "--check")
+    assert result.returncode == 0, result.stdout  # its index is fine and stands in for a descriptor
+    write(cdb / "catalog" / "bare" / "note.md", doc())
+    result = run(project, "toc", "context-db/catalog", "--check")
+    assert result.returncode == 1 and "bare/: no folder descriptor" in result.stdout
+
+    write(cdb / "demo-project" / "index.md", "# Files\n\n* [Gone](gone.md) - Long since deleted\n")
+    assert "Long since deleted" not in toc(project)  # never read in the project folder
+    assert "Read from its files just now." in toc(project)
+    result = run(project, "toc", "--check")
+    assert result.returncode == 1 and "index.md files are not used" in result.stdout
+
+
 # ── Lint ─────────────────────────────────────────────────────────────────────
 
 
@@ -389,6 +468,53 @@ def test_toc_runs_but_is_not_listed(project):
     assert run(REPO, "index").returncode != 0
 
 
+SHOWN = re.compile(
+    r"(?s)\A(# Context-db Show Context\n.*?)\n======== start of the message ========\n"
+    r"(.*)\n======== end of the message ========\n\n(.*)\Z"
+)
+
+
+@pytest.mark.parametrize(
+    "args",
+    [
+        ("prompt", "the task"),
+        ("prompt",),
+        ("update", "note this", "--push"),
+        ("wip",),
+        ("wip", "--list"),
+        ("wip", "--cleanup"),
+        ("configure",),
+        ("maintain", "--use-git-diff"),
+    ],
+)
+def test_show_context_wraps_the_very_same_message_for_the_user_to_read(project, args):
+    plain = run(project, *args).stdout
+    before, message, after = SHOWN.match(run(project, *args, "--show-context").stdout).groups()
+    assert message + "\n" == plain
+    assert f"`--show-context` to `/context-db {args[0]}`" in before
+    assert "word for word" in before and "Do not follow the message" in before
+    assert "do nothing it says" in after
+
+
+def test_show_context_also_covers_a_repository_that_is_not_set_up(tmp_path):
+    (tmp_path / "context-db").mkdir()
+    for command in ("prompt", "update", "wip", "maintain"):
+        out = run(tmp_path, command, "x", "--show-context").stdout
+        assert out.startswith("# Context-db Show Context"), command
+        assert "/context-db configure" in SHOWN.match(out).group(2)
+
+
+def test_show_context_refuses_setting_flags_and_writes_nothing(tmp_path):
+    result = run(tmp_path, "configure", "--project", "demo", "--show-context")
+    assert result.returncode != 0
+    assert "--show-context shows the message a command sends" in result.stdout
+    assert not (tmp_path / "context-db").exists()
+    assert run(tmp_path, "toc", "--show-context").returncode != 0  # toc has no such flag
+    assert "Add --show-context to any command" in run(REPO, "--help").stdout
+    for command in USER_COMMANDS:
+        assert "--show-context" in run(REPO, command, "--help").stdout
+
+
 def flat(markdown):
     return " ".join(markdown.replace("`", "").split())
 
@@ -423,7 +549,7 @@ def sections_sent(output):
 
 
 EVERY_SECTION = {  # the flags that make each command send every section it can
-    "prompt": (),
+    "prompt": ("--use-global-context",),
     "update": ("--push",),
     "wip": (),
     "configure": (),
@@ -501,6 +627,8 @@ def test_broken_settings_are_reported_cleanly(project):
 def test_no_placeholder_is_left_unfilled(example):
     for args in (
         ("prompt", "x"),
+        ("prompt", "x", "--use-global-context"),
+        ("prompt", "x", "--show-context"),
         ("update",),
         ("update", "x", "--push"),
         ("wip", "x"),
@@ -594,6 +722,158 @@ def test_mounted_folder_descriptor_is_found_under_its_real_name(project, tmp_pat
     write(source / "coding-standards.md", "---\ntype: Folder\ndescription: Real name wins\n---\n")
     (project / "context-db" / "general-standards").symlink_to(source)
     assert "Real name wins" in run(project, "prompt", "x").stdout
+
+
+# ── Global context ───────────────────────────────────────────────────────────
+
+USAGE_NOTES = "../*/okc/*-usage.okf"
+BY_INDEX = "(no description; it holds Orders, Refunds)"
+
+
+def usage_notes(repo, description):
+    """Notes the way another repository publishes them: <repo>/okc/<repo>-usage.okf/."""
+    folder = repo / "okc" / f"{repo.name}-usage.okf"
+    write(folder / f"{folder.name}.md", f"---\ntype: Folder\ndescription: {description}\n---\n")
+    write(folder / "calling.md", doc(description=f"Calling {repo.name}"))
+    return folder
+
+
+@pytest.fixture
+def workspace(tmp_path):
+    """Repositories side by side. acme uses context-db; ledger and billing publish notes."""
+    acme = tmp_path / "acme"
+    acme.mkdir()
+    result = run(acme, "configure", "--project", "acme", "--global-context", USAGE_NOTES)
+    assert result.returncode == 0, result.stdout
+    usage_notes(tmp_path / "ledger", "How to call the ledger")
+    usage_notes(tmp_path / "billing", "How to call billing")
+    return acme
+
+
+def global_context(out):
+    return out.split("# Global Context")[1].split("\n# ")[0]
+
+
+def test_prompt_lists_the_folders_the_global_context_setting_matches(workspace):
+    settings = (workspace / "context-db" / "configuration" / "settings.md").read_text()
+    assert f"main_branch: main\nglobal_context: {USAGE_NOTES}\n---\n" in settings
+    catalog(workspace.parent / "rates" / "okc" / "rates-usage.okf")
+    write(workspace.parent / "stray" / "okc" / "file-usage.okf", "a file, not a folder\n")
+    out = run(workspace, "prompt", "the task").stdout
+    listed = [line for line in global_context(out).splitlines() if line.startswith("- ")]
+    assert listed == [
+        "- **Global folder** `../billing/okc/billing-usage.okf/`: How to call billing",
+        "- **Global folder** `../ledger/okc/ledger-usage.okf/`: How to call the ledger",
+        "- **Global folder** `../rates/okc/rates-usage.okf/`: " + BY_INDEX,
+    ]
+    assert "`global_context`\nsetting in `context-db/configuration/settings.md`" in out
+    assert "context-db.py toc <folder>` lists one of them" in global_context(out)
+    assert "Never edit one." in global_context(out)
+    marks = ("# Folders", "# Global Context", "# Project Rules", "# User Instruction")
+    order = [out.index(mark) for mark in marks]
+    assert order == sorted(order)
+    assert "If a Global Context section appears below" in out
+    listing = toc(workspace, "../ledger/okc/ledger-usage.okf")
+    assert "* [Title](../ledger/okc/ledger-usage.okf/calling.md) - Calling ledger" in listing
+    assert "Read from `../rates/okc/rates-usage.okf/index.md`" in toc(
+        workspace, "../rates/okc/rates-usage.okf"
+    )
+    for command in ("update", "wip", "maintain"):
+        assert "# Global Context" not in run(workspace, command, "x").stdout
+
+
+def test_global_context_patterns_are_read_from_the_repository_root(workspace):
+    subprocess.run(["git", "init", "-q"], cwd=str(workspace), check=True)
+    deep = workspace / "src" / "api"
+    deep.mkdir(parents=True)
+    out = run(deep, "prompt", "x").stdout
+    assert "- **Global folder** `../../../billing/okc/billing-usage.okf/`: How to" in out
+    assert "- **Global folder** `../../../ledger/okc/ledger-usage.okf/`: How to" in out
+
+
+def test_use_global_context_false_lists_them_only_when_asked(workspace):
+    assert run(workspace, "configure", "--use-global-context", "false").returncode == 0
+    conf = workspace / "context-db" / "configuration"
+    assert "\nuse_global_context: false\n---\n" in (conf / "settings.md").read_text()
+    assert "# Global Context" not in run(workspace, "prompt", "x").stdout
+    asked = run(workspace, "prompt", "x", "--use-global-context").stdout
+    assert "`../ledger/okc/ledger-usage.okf/`" in global_context(asked)
+    assert asked.rstrip().endswith("# User Instruction\n\nx")
+    # One user turns it back on for every prompt of their own.
+    assert run(workspace, "configure", "--local", "use_global_context=true").returncode == 0
+    assert "use_global_context: true" in (conf / "settings.local.md").read_text()
+    assert "`../ledger/okc/ledger-usage.okf/`" in run(workspace, "prompt", "x").stdout
+
+
+def test_asking_for_global_context_says_so_when_there_is_none(project):
+    assert "# Global Context" not in run(project, "prompt", "x").stdout
+    asked = " ".join(
+        global_context(run(project, "prompt", "x", "--use-global-context").stdout).split()
+    )
+    assert "`context-db/configuration/settings.md` has no `global_context` line" in asked
+    assert run(project, "configure", "--local", "global_context=../nowhere/*.okf").returncode == 0
+    assert "# Global Context" not in run(project, "prompt", "x").stdout
+    asked = " ".join(
+        global_context(run(project, "prompt", "x", "--use-global-context").stdout).split()
+    )
+    assert "is `../nowhere/*.okf`, and that matches no folder from `./`" in asked
+
+
+def test_global_context_leaves_out_what_context_db_already_holds(workspace):
+    cdb = workspace / "context-db"
+    ledger = workspace.parent / "ledger"
+    write(
+        ledger / "context-db" / "ledger-project" / "ledger-project.md",
+        "---\ntype: Folder\ndescription: The ledger's own notes\n---\n",
+    )
+    (cdb / "ledger-usage").symlink_to(ledger / "okc" / "ledger-usage.okf")
+    result = run(
+        workspace,
+        "configure",
+        "--global-context",
+        "../*/context-db/*-project",
+        "--global-context",
+        USAGE_NOTES,
+    )
+    assert result.returncode == 0, result.stdout
+    settings = (cdb / "configuration" / "settings.md").read_text()
+    assert f"global_context: ../*/context-db/*-project {USAGE_NOTES}\n" in settings
+    out = run(workspace, "prompt", "x").stdout
+    listed = [line for line in global_context(out).splitlines() if line.startswith("- ")]
+    assert listed == [
+        "- **Global folder** `../ledger/context-db/ledger-project/`: The ledger's own notes",
+        "- **Global folder** `../billing/okc/billing-usage.okf/`: How to call billing",
+    ]
+    folders = out.split("# Folders")[1].split("# Global Context")[0]
+    assert "**Background folder** `context-db/ledger-usage/`: How to call the ledger" in folders
+    assert out.count("acme-project/`") == 1
+
+
+def test_a_use_global_context_that_is_not_true_or_false_is_reported(workspace):
+    settings = workspace / "context-db" / "configuration" / "settings.md"
+    settings.write_text(
+        settings.read_text().replace("---\n\n", "use_global_context: sometimes\n---\n\n", 1)
+    )
+    result = run(workspace, "prompt", "x")
+    assert result.returncode != 0
+    assert (
+        "`use_global_context` in context-db/configuration/ must be true or false" in result.stdout
+    )
+    assert "not `sometimes`" in result.stdout and "Traceback" not in result.stdout
+    assert run(workspace, "configure", "--use-global-context", "sometimes").returncode != 0
+    assert run(workspace, "configure").returncode == 0  # configure still runs, to repair it
+
+
+def test_configure_reports_and_asks_about_global_context(workspace, project):
+    out = run(workspace, "configure").stdout
+    assert (
+        f"- Global context: `global_context: {USAGE_NOTES}` matches "
+        "`../billing/okc/billing-usage.okf/`, `../ledger/okc/ledger-usage.okf/`" in out
+    )
+    assert " configure --global-context '<pattern>' --use-global-context <true or false>" in out
+    out = " ".join(run(project, "configure").stdout.split())
+    assert "- Global context: no `global_context` setting" in out
+    assert "Should `prompt` also list knowledge folders from other repositories" in out
 
 
 # ── update ───────────────────────────────────────────────────────────────────
@@ -1072,6 +1352,8 @@ def test_configure_with_settings_rejects_bad_input_without_writing_anything(tmp_
         ("--project", "a/b"),
         ("--project", "demo", "--local", "colour=blue"),
         ("--project", "demo", "--local", "python"),
+        ("--project", "demo", "--local", "use_global_context=sometimes"),
+        ("--project", "demo", "--use-global-context", "sometimes"),
     ):
         assert run(tmp_path, "configure", *args).returncode != 0
     assert not (tmp_path / "context-db").exists()

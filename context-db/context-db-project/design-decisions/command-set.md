@@ -3,9 +3,10 @@ type: Decision
 description:
   The five user commands and their order (prompt, update, wip, configure,
   maintain), why maintain is separate from update, why init folded into
-  configure, why help and the toc helper are not listed, and how --help, the
-  README, and the docs home page stay word-for-word in sync. Owner decisions of
-  2026-11-11.
+  configure, why help and the toc helper are not listed, why the flag that shows
+  a command's message is called --show-context and not --dry-run, and how
+  --help, the README, and the docs home page stay word-for-word in sync. Owner
+  decisions of 2026-11-11 and 2026-11-19.
 ---
 
 # The command set
@@ -32,6 +33,18 @@ starts the conversation; with `--project` or any other setting flag it writes
 the files and asks nothing. There is no `help` sub-command; `--help` and a bare
 call print the list. `toc` is left out of `--help` because only the agent and
 CI run it.
+
+## --show-context, not --dry-run
+
+The owner (2026-11-19) wanted "a --dry-run" on every command and rejected the
+name in the same sentence: "all this does is invoke the skill and show what
+context will be sent to the agent". Nothing is simulated, so the flag is named
+for what it does. `--show-context` was the implementing agent's proposal, and
+the owner kept it.
+
+The message between the markers must stay byte for byte what the command sends
+without the flag. The flag is refused together with `configure`'s setting
+flags, because showing must never write.
 
 ## One source for the one-line summaries
 

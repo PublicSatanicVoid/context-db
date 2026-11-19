@@ -24,7 +24,9 @@ is free for the user's notes and `configure` preserves it. `settings.local.md` i
 gitignored and overrides any key for one user (typically an interpreter path).
 
 The key set is closed: each key answers something the script cannot work out.
-A new key needs that same justification.
+A new key needs that same justification. Two optional keys were added on that
+ground on 2026-11-19, for [global context](./global-context.md); they are the
+only keys a project may leave out.
 
 ## No update_mode
 

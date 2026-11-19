@@ -53,6 +53,59 @@ that is not about this project in particular, such as coding standards, and it
 usually lives in another repository. The commands read background folders and
 never change them. [Sharing](#sharing) covers how to mount one.
 
+## Global context
+
+Some knowledge is better left where it is. A repository that other projects use
+can keep a folder of notes on how to use it, and each project that needs those
+notes can read them in place, with nothing mounted or copied. context-db calls
+this global context.
+
+You say where to look with a setting, `global_context`, in
+`context-db/configuration/settings.md`:
+
+```markdown
+---
+project: acme-payments
+python: python3
+main_branch: main
+global_context: ../*/okc/*-usage.okf
+---
+```
+
+The value is a glob pattern that matches the folders themselves. It is read from
+the top of your repository, wherever the command is run from. This one matches
+every folder whose name ends in `-usage.okf`, inside the `okc/` folder of each
+repository next to yours. To use several patterns, separate them with spaces. A
+pattern can also start with `~` or `/`.
+
+`prompt` lists every folder that a pattern matches, after the project folder and
+the background folders, one line each with its description:
+
+```markdown
+# Global Context
+
+- **Global folder** `../acme-ledger/okc/ledger-usage.okf/`: How to call the ledger service, and the idempotency rules
+- **Global folder** `../acme-billing/okc/billing-usage.okf/`: Invoice numbering and the rate tables
+```
+
+The agent looks into one only when its description matches the task, and it
+never changes one. `update`, `wip`, and `maintain` do not list them.
+
+The description comes from the file named after the folder, the same as for any
+[folder](#a-folder): `ledger-usage.okf/ledger-usage.okf.md` here. A folder that
+`context-db/` already holds, such as a mounted background folder, is not listed
+a second time.
+
+A second setting decides when the list is sent:
+
+| `use_global_context` | What happens |
+| --- | --- |
+| `true`, or left out | Every `prompt` lists the folders. |
+| `false` | Only `/context-db prompt --use-global-context` lists them. Use this when the patterns match many folders and most tasks need none of them. |
+
+Both settings can also go in `settings.local.md`, when the way your machine is
+laid out is not the way your teammates' machines are.
+
 ## A file
 
 ```markdown
@@ -107,7 +160,8 @@ read.
 
 ## Dynamic indexing
 
-There are no `index.md` files. When the agent looks into a folder, it runs:
+The project folder has no `index.md` files. When the agent looks into a folder,
+it runs:
 
 ```bash
 python3 .claude/skills/context-db/context-db.py toc context-db/acme-payments-project
@@ -172,6 +226,22 @@ The one thing it gives up is browsing: on GitHub or in Obsidian you see the
 files without their descriptions. [The OKF page](okf.md#dynamic-indexing) has
 more on the choice.
 
+### A folder that comes with an index
+
+OKF lets a folder carry an `index.md`, and a folder written by another OKF tool
+often has one. context-db uses it. When a background folder or a global folder
+has an `index.md`, `toc` prints that file, with its links rewritten so that they
+work from where you are. When it has none, `toc` builds the listing as usual.
+This is decided folder by folder, so one folder can bring an index while its
+subfolders do not.
+
+A folder like that often has no file named after it either. `prompt` then
+describes it by the names its index lists.
+
+Your project folder is the exception. context-db writes it and lists it from
+its files every time, so an `index.md` there is never read, and the checker
+reports it.
+
 ## Links
 
 Link between files with ordinary Markdown links, relative to the file you are
@@ -218,6 +288,10 @@ and mount it into each project that needs it.
 
 You mount it as a [background folder](#background-folders). `prompt` lists
 background folders next to the project folder.
+
+Mounting suits a few folders that you choose one by one. To have the agent find
+notes in whatever repositories are checked out next to yours, with no mount,
+use [global context](#global-context).
 
 ```text
 context-db/
@@ -285,9 +359,10 @@ python3 <path-to>/context-db.py toc context-db/coding-standards --check
 - a `type` or `description` that is not valid YAML as written
 - a `status` other than `draft`, `stable`, or `deprecated`
 - a link to a file that does not exist, or a link that starts with `/`
-- a folder with no file named after it
+- a folder with no file named after it, unless it is outside the project folder
+  and has an `index.md` of its own
 - a symlink inside the project folder or a background folder
-- an `index.md` file, which context-db does not use
+- an `index.md` file in the project folder, where context-db does not use one
 
 It reports these as warnings: a file over 200 lines outside `wip/`, and a
 folder with more than 12 items.

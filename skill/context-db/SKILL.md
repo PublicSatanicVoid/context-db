@@ -17,9 +17,9 @@ otherwise the one in `context-db/configuration/settings.md`, otherwise
 `python3`.
 
 Sub-commands: `prompt`, `update`, `wip`, `configure`, `maintain`. With no
-sub-command, or with `--help`, the script prints the list. Flags such as
-`--commit`, `--push`, `--list`, `--cleanup`, and `--clear` go outside the
-quotes.
+sub-command, or with `--help`, the script prints the list. Flags the user
+typed on the command's line, such as `--push`, `--cleanup`, `--show-context`,
+and `--use-global-context`, go outside the quotes.
 
 Pass the user's instruction exactly as they typed it, as one single-quoted
 argument. Single quotes stop the shell from changing `$`, backticks, and `!`:

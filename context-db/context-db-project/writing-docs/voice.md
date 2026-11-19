@@ -56,6 +56,7 @@ not "We recommend copying the skill."
 | --- | --- |
 | project folder | project bundle |
 | background folder | background bundle, external folder |
+| global context, global folder | external source, global bundle |
 | a set of skills | a tool, a framework, a system |
 | settings | configuration (except for the file name) |
 | knowledge base | database, store |

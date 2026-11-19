@@ -4,7 +4,9 @@ There are five commands: `prompt`, `update`, `wip`, `configure`, and
 `maintain`. `/context-db --help` lists them. Each one prints a set of
 instructions, and the agent follows them. Nothing is hidden: the exact text is
 under each command below, and [How it all fits together](#how-it-all-fits-together)
-shows the whole message each command sends.
+shows the whole message each command sends. Add `--show-context` to any command
+and the agent [shows you that message](#see-the-message-for-your-own-project)
+for your own project.
 
 In Claude Code you type a command as `/context-db <command>`. To tell the agent
 something, start a new line and write it there. It needs no quotes, and it can
@@ -59,13 +61,23 @@ What the agent does:
 When the knowledge base and the code disagree, the agent is told to trust the
 code and to tell you.
 
+If your settings point to [global context](layout.md#global-context), which is
+knowledge kept in other repositories, `prompt` lists those folders as well. When
+the setting `use_global_context` is `false`, it lists them only when you ask:
+
+```text
+/context-db prompt --use-global-context
+
+Add an endpoint for refunds. It posts to the ledger service.
+```
+
 :::{dropdown} The text the agent receives
 :color: secondary
 
 Words in braces are filled in when the command runs. After this text the agent
 sees [the rule every command repeats](#the-rule-every-command-repeats), the list
-from `wip/wip.md` when it lists anything, the folder list, your `ON_PROMPT.md`
-rules, and your instruction.
+from `wip/wip.md` when it lists anything, the folder list, the global context
+when there is any, your `ON_PROMPT.md` rules, and your instruction.
 
 ```{literalinclude} ../skill/context-db/prompts/prompt.md
 :language: markdown
@@ -390,14 +402,15 @@ creates whatever is missing, and never overwrites a file:
 python3 .claude/skills/context-db/context-db.py configure --project acme-payments
 ```
 
-Its options are `--project`, `--main-branch`, `--python`, and
-`--local KEY=VALUE` for a setting that applies only to you.
+Its options are `--project`, `--main-branch`, `--python`, `--global-context`,
+`--use-global-context`, and `--local KEY=VALUE` for a setting that applies only
+to you. [Setup](setup.md#settings) describes each setting.
 
 ## Listing and checking: toc
 
-context-db has no `index.md` files. Whenever the agent looks into the knowledge
-base, it runs a small helper that lists a folder on the spot, one line for each
-file and subfolder with its description:
+Your project folder has no `index.md` files. Whenever the agent looks into the
+knowledge base, it runs a small helper that lists a folder on the spot, one line
+for each file and subfolder with its description:
 
 ```bash
 python3 .claude/skills/context-db/context-db.py toc context-db/acme-payments-project
@@ -420,6 +433,10 @@ place to type it is CI:
 ```bash
 python3 .claude/skills/context-db/context-db.py toc --check
 ```
+
+A folder that comes from somewhere else may bring an `index.md` of its own.
+`toc` prints that file for such a folder, and builds the listing only when
+there is none.
 
 [Dynamic indexing](layout.md#dynamic-indexing) describes the listing, and the
 [OKF page](okf.md#dynamic-indexing) why context-db builds it on demand.
@@ -464,7 +481,7 @@ Every section of that message comes from one of five places:
 | `.claude/skills/context-db/prompts/` | The canned text: built-in instructions, one file for each section. They are the same in every project, and the dropdowns above show each one. | Nobody. They come with context-db. |
 | `context-db/configuration/ON_<COMMAND>.md` | [The project's rules](#the-rule-files-control-how-the-agent-behaves) for that one command, shared with everyone. | You and your team, by hand. |
 | `context-db/configuration/ON_<COMMAND>.local.md` | Your own rules for that command. Gitignored. | You, by hand. |
-| Your repository, read when the command runs | The list of work in progress, the list of folders with their descriptions, and the state of git. | Nobody directly. It is whatever the files say at that moment. |
+| Your repository, read when the command runs | The list of work in progress, the list of folders with their descriptions, the global context that your settings point to, and the state of git. | Nobody directly. It is whatever the files say at that moment. |
 | What you typed | Your instruction. It always comes last. | You. |
 
 These are the sections each command sends, in order. Each one starts with the
@@ -479,6 +496,7 @@ heading shown.
 | `# Context-db Is Not a Mirror of the Code` | `prompts/not-a-mirror.md` |
 | `# Work In Progress` | The list in `wip/wip.md`. Left out when it lists nothing. |
 | `# Folders` | The project folder and each background folder, one line each with its description. |
+| `# Global Context` | Each folder outside `context-db/` that the `global_context` setting matches, one line each with its description. Left out when nothing matches, and when `use_global_context` is `false` and you did not add `--use-global-context`. |
 | `# Project Rules` | `configuration/ON_PROMPT.md` |
 | `# User Rules` | `configuration/ON_PROMPT.local.md`, if you have one. |
 | `# User Instruction` | What you typed. |
@@ -560,8 +578,23 @@ the `Project Rules` section near the end:
 ```
 :::
 
-To see the message for your own project, run the same command in a terminal. It
-prints exactly what the agent would get:
+### See the message for your own project
+
+Add `--show-context` to any command:
+
+```text
+/context-db prompt --show-context
+
+Add an endpoint for refunds.
+```
+
+The agent shows you the whole message that the command sends it, and does
+nothing else. It reads no notes and changes no files. The flag works on all five
+commands and with their other flags, so `/context-db update --push
+--show-context` shows what `update --push` would send.
+
+In a terminal you need no flag. The script prints exactly what the agent would
+get:
 
 ```bash
 python3 .claude/skills/context-db/context-db.py prompt "add a refund endpoint"
@@ -571,4 +604,5 @@ To change what the agent is told, edit the ON file for that command: the
 project's file to change it for everyone, your `.local.md` file to change it for
 yourself.
 `settings.md` adds no text of its own. It tells the script the name of the
-project folder, the Python command, and the main branch.
+project folder, the Python command, the main branch, and where to look for
+global context.

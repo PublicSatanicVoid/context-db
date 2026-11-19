@@ -146,6 +146,15 @@ main_branch: main
 | `python` | The command the agent uses to run the script. |
 | `main_branch` | The branch that `wip --cleanup` compares your current branch against. |
 
+Two more settings are optional. They point the agent at knowledge that is kept
+outside your repository. [Global context](layout.md#global-context) explains
+them.
+
+| Setting | Meaning |
+| --- | --- |
+| `global_context` | Glob patterns that match knowledge folders outside `context-db/`, such as `../*/okc/*-usage.okf`. They are read from the top of your repository, and several are separated by spaces. |
+| `use_global_context` | `true`, or left out: every `prompt` lists those folders. `false`: only `/context-db prompt --use-global-context` does. |
+
 Edit them by hand. Anything below the `---` lines is yours for notes.
 
 `context-db/configuration/settings.local.md` is yours alone. It is gitignored,
