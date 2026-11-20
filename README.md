@@ -120,6 +120,13 @@ with its description, built from the files on the spot. The agent reads that
 list, opens the one or two files it needs, and leaves the rest alone. Nothing is
 generated ahead of time, so the list is never out of date.
 
+The knowledge base is for agents working on your project. If other projects
+use yours, it can also keep a
+[usage folder](https://cart0113.github.io/context-db/layout.html#the-usage-folder):
+the few notes an agent in one of those projects needs in order to use yours.
+`/context-db update --usage` writes it, and those projects read it from their
+own knowledge base.
+
 There is no database and no server, in spite of the name. It is a folder of text
 files and one Python script.
 
@@ -134,6 +141,7 @@ your-project/
     ├── acme-payments-project/      the project folder: your project's knowledge
     │   ├── architecture.md
     │   ├── data-model/
+    │   ├── acme-payments-usage/    optional: what other projects need to use yours
     │   └── wip/                    optional: wip.md lists the work in progress
     └── coding-standards/           a background folder shared with other projects
 ```
@@ -143,10 +151,10 @@ your-project/
 | Command | What it does |
 | --- | --- |
 | `/context-db prompt` | Before a task. Looks up what the knowledge base says about it. |
-| `/context-db update` | After a task. Writes down what the next agent would need, if anything. `--push` also commits and pushes. |
+| `/context-db update` | After a task. Writes down what the next agent would need, if anything. `--push` also commits and pushes. `--usage` writes down what other projects need to know to use this one. |
 | `/context-db wip` | Optional, for long work. Keeps a short list of the work in progress. `--list`, `--cleanup`, `--clear`. |
 | `/context-db configure` | First, and whenever you like. Sets context-db up by asking a few questions; edit the files by hand afterwards. |
-| `/context-db maintain` | Now and then. Removes what the code and its comments already say, fixes what has drifted, and splits and reorganizes. `--use-git-diff` also reads the git history for what has gone out of date. |
+| `/context-db maintain` | Now and then. Removes what the code and its comments already say, fixes what has drifted, and splits and reorganizes. `--use-git-diff` also reads the git history for what has gone out of date. `--usage` tidies the usage folder instead. |
 
 `/context-db --help` prints the same list.
 

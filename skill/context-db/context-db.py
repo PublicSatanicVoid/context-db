@@ -7,11 +7,13 @@ follows; COMMAND_SUMMARIES below is the one-line description of each, shown by
 --help and repeated word for word in the README and on the docs home page.
 
   prompt "<task>"         Before a task (--use-global-context).
-  update ["<learning>"]   After a task (--commit / --push to commit too).
+  update ["<learning>"]   After a task (--commit / --push to commit too;
+                          --usage to write the usage folder instead).
   wip ["<instruction>"]   Optional (--list, --cleanup, --clear).
   configure               First, and whenever you like. With --project and the
                           other setting flags it writes the files itself.
-  maintain ["<scope>"]    Now and then: tidy the knowledge base (--use-git-diff).
+  maintain ["<scope>"]    Now and then: tidy the knowledge base (--use-git-diff;
+                          --usage to tidy the usage folder instead).
 
 Every one of them takes --show-context: print the same message, wrapped so that
 the agent shows it to the user and does not act on it.
@@ -35,16 +37,26 @@ Layout (the file format is described in prompts/format.md):
       settings.local.md         per-user overrides; gitignored
       ON_PROMPT.md ...          project rules added to a command, one file per command
       ON_PROMPT.local.md ...    one user's rules for that command; gitignored
-    <project>-project/          the project folder: the only place commands write
+    <project>-project/          the project folder: for agents working on this project
       wip/wip.md                optional list of the work in progress
+      <project>-usage/          optional usage folder: for agents in other projects
+                                that use this one. `update --usage` writes it, and
+                                the `usage_folder` setting can keep it elsewhere
     <anything-else>/            background folders, real or symlinked: read-only
+
+The commands write to the project folder and the usage folder, and to nothing
+else in the knowledge base.
 
 Knowledge comes from three places. The project folder is this repository's own.
 Background folders are mounted beside it. Global folders stay where they are,
 outside context-db/: the `global_context` setting holds glob patterns that find
-them, and `prompt` lists what the patterns match.
+them, and `prompt` lists what the patterns match. Another project's usage
+folder is the usual thing to mount or to match.
 
 Each of those folders is an Open Knowledge Format (OKF) bundle.
+
+Settings are layered. A settings file can name more settings files on a
+`settings_files` line; they are read after it and override it (settings_order).
 
 Requires Python 3.8+ and nothing outside the standard library.
 """
@@ -68,12 +80,20 @@ SETTINGS_NAME = "settings.md"
 LOCAL_SETTINGS_NAME = "settings.local.md"
 LOCAL_GLOB = "*.local.md"  # every per-user file in configuration/; gitignored
 REQUIRED_SETTINGS = ("project", "python", "main_branch")
+# usage_folder: where the usage folder is kept, as a path read from the
+# repository root in which {project} stands for the project name. Left out, it
+# is <project>-usage inside the project folder.
 # global_context: glob patterns, separated by spaces and read from the repository
 # root, that match knowledge folders outside context-db/.
 # use_global_context: whether every `prompt` lists them (true, also when the key
 # is left out) or only `prompt --use-global-context` (false).
-OPTIONAL_SETTINGS = ("global_context", "use_global_context")
+OPTIONAL_SETTINGS = ("usage_folder", "global_context", "use_global_context")
 SETTINGS_KEYS = REQUIRED_SETTINGS + OPTIONAL_SETTINGS
+# The line on which a settings file names more settings files, separated by
+# spaces and read from the repository root. Each is read after the file that
+# names it and overrides it. It is written by hand: no command sets it.
+SETTINGS_FILES = "settings_files"
+PROJECT_NAME = "{project}"  # stands for the project name in the usage_folder setting
 SWITCH_VALUES = ("true", "false")
 WIP_LIST_NAME = "wip.md"
 INDEX_NAME = "index.md"
@@ -102,7 +122,8 @@ Before a task. Looks up what the knowledge base says about it.
 """,
     "update": """
 After a task. Writes down what the next agent would need, if anything. --push
-also commits and pushes.
+also commits and pushes. --usage writes down what other projects need to know
+to use this one.
 """,
     "wip": """
 Optional, for long work. Keeps a short list of the work in progress. --list,
@@ -115,7 +136,8 @@ edit the files by hand afterwards.
     "maintain": """
 Now and then. Removes what the code and its comments already say, fixes what
 has drifted, and splits and reorganizes. --use-git-diff also reads the git
-history for what has gone out of date.
+history for what has gone out of date. --usage tidies the usage folder
+instead.
 """,
 }
 
@@ -168,7 +190,7 @@ HISTORY_NOT_COMMITTED = """
 """
 
 HISTORY_EMPTY = """
-(The project folder holds no notes yet.)
+(There are no notes here yet.)
 """
 
 NOT_CONFIGURED = """
@@ -183,6 +205,10 @@ No instruction was given. Ask the user what they want to work on.
 
 PROJECT_FOLDER_MISSING = """
 - **Project folder** `{folder}/` does not exist. Tell the user to run `/context-db configure`.
+"""
+
+USAGE_FOLDER_MISSING = """
+- **Usage folder** `{folder}/` does not exist yet.
 """
 
 BROKEN_MOUNT = """
@@ -300,7 +326,11 @@ Nothing is in this folder yet.
 """
 
 STRAY_INDEX = """
-{path}: context-db lists the project folder on the fly with `toc`, so index.md files are not used in it — delete it
+{path}: context-db lists the folders it writes on the fly with `toc`, so index.md files are not used in them — delete it
+"""
+
+LINK_LEAVES_USAGE = """
+{path}: link `{target}` leaves the usage folder — other projects read that folder from wherever they mount it, so link only to files inside it
 """
 
 PROJECT_DESCRIPTOR = """
@@ -337,17 +367,26 @@ Settings for the context-db skills. Edit them by hand whenever you like.
 - python: the command that runs the skills' script, Python 3.8 or newer.
 - main_branch: the branch that `/context-db wip --cleanup` compares against.
 
-Two more are optional. Add them as lines of their own:
+Four more are optional. Add them as lines of their own:
 
+- usage_folder: where the usage folder is kept, as a path from the top of the
+  repository, such as okf/{{project}}-usage. {{project}} stands for the project
+  name. Left out, it is <project>-usage/ inside the project folder.
+  `/context-db update --usage` writes that folder: what other projects need to
+  know to use this one.
 - global_context: glob patterns that match knowledge folders outside
-  context-db/, such as ../*/okc/*-usage.okf. They are read from the top of the
+  context-db/, such as ../*/okf/*-usage. They are read from the top of the
   repository, and several are separated by spaces. `/context-db prompt` lists
   the folders they match.
 - use_global_context: false lists those folders only on
   `/context-db prompt --use-global-context`. Left out, it is true.
+- settings_files: more settings files to read, such as
+  ~/.config/context-db/team.md, separated by spaces. Each is read after this
+  file and overrides it.
 
-settings.local.md in this folder, if it exists, overrides any of these for one
-user. Every *.local.md file in this folder is gitignored.
+settings.local.md in this folder, if it exists, is read after those and
+overrides any of this for one user. Every *.local.md file in this folder is
+gitignored.
 -->
 """
 
@@ -422,6 +461,13 @@ def write_text(path, content):
 # the settings as `key: value` lines in the frontmatter, so the user and the
 # agent read them like any other file and the script parses them like any
 # other frontmatter.
+#
+# A settings file can name more settings files on its `settings_files` line: one
+# that a team shares between projects, or one that a user keeps for all of
+# theirs. They are read right after the file that names them, so the order is
+# settings.md, the files it names, settings.local.md, the files it names. A
+# later file overrides an earlier one, key by key. The named files are only
+# ever read; the user writes them.
 
 
 def conf_dir(cdb):
@@ -432,19 +478,62 @@ def settings_path(cdb, local=False):
     return os.path.join(conf_dir(cdb), LOCAL_SETTINGS_NAME if local else SETTINGS_NAME)
 
 
+def from_root(cdb, path):
+    """Where a path or a pattern in the settings points: it is read from the repository root.
+
+    `~` and absolute paths work too.
+    """
+    return os.path.join(os.path.dirname(os.path.abspath(cdb)), os.path.expanduser(path))
+
+
 def load_settings(path):
     """Return (values, problem). The problem is None when the file is usable."""
+    if not os.path.isfile(path):
+        return None, "does not exist"
     meta, _ = read_doc(path)
     if meta is None:
         return None, "has no `---` block at the top holding the settings"
     return meta, None
 
 
-def read_settings(path):
+def read_settings(path, named_by=""):
+    """The values in a settings file. Stops when it is unusable, saying which file names it."""
     values, problem = load_settings(path)
+    if problem and named_by:
+        sys.exit(
+            f"Error: {path} {problem}. The `settings_files` line in {named_by} names it. "
+            "Fix the file, or take it off that line."
+        )
     if problem:
         sys.exit(f"Error: {path} {problem}. Fix it by hand, or delete it and run configure.")
     return values
+
+
+def named_settings(cdb, value):
+    """The files that a `settings_files` value names, as paths from the cwd."""
+    return [rel(from_root(cdb, name)) for name in value.split()]
+
+
+def settings_order(cdb):
+    """Every settings file in the order it is read, as (path, the file that names it).
+
+    settings.md and settings.local.md are named by nothing and are listed even
+    when they do not exist. A file is read once, where it is first named, so
+    files that name each other cannot loop.
+    """
+    order = []
+
+    def add(path, named_by):
+        if any(path == listed for listed, _ in order):
+            return
+        order.append((path, named_by))
+        values = load_settings(path)[0] or {}
+        for named in named_settings(cdb, values.get(SETTINGS_FILES, "")):  # an optional line
+            add(named, path)
+
+    for local in (False, True):
+        add(settings_path(cdb, local), "")
+    return order
 
 
 def write_settings(path, values, default_body):
@@ -463,19 +552,21 @@ def check_switch(key, value, where):
 
 
 def load_config(cdb):
-    """The shared settings with user overrides applied, or None when there are none."""
+    """The settings from every file in settings_order, or None when there is no settings.md."""
     shared_path = settings_path(cdb)
     if not os.path.isfile(shared_path):
         return None
-    config = read_settings(shared_path)
-    local_path = settings_path(cdb, local=True)
-    if os.path.isfile(local_path):
-        config.update(read_settings(local_path))
+    config = {}
+    for path, named_by in settings_order(cdb):
+        if not named_by and not os.path.isfile(path):
+            continue  # settings.local.md is optional; a file that is named is not
+        values = read_settings(path, named_by)
+        if "use_global_context" in values:
+            check_switch("use_global_context", values["use_global_context"], path)
+        config.update(values)
     missing = [key for key in REQUIRED_SETTINGS if not config.get(key)]  # frontmatter: all optional
     if missing:
         sys.exit(f"Error: {shared_path} has no {', '.join(missing)}. Run /context-db configure.")
-    if "use_global_context" in config:
-        check_switch("use_global_context", config["use_global_context"], f"{conf_dir(cdb)}/")
     return config
 
 
@@ -494,16 +585,35 @@ def configured(cdb, key, default=""):
     `toc`, which works on any folder.
     """
     value = default
-    for local in (False, True):
-        path = settings_path(cdb, local)
-        values = load_settings(path)[0] if os.path.isfile(path) else None
-        if values and values.get(key):  # frontmatter: either file may leave it out
+    for path, _ in settings_order(cdb):
+        values = load_settings(path)[0]
+        if values and values.get(key):  # frontmatter: any file may leave it out
             value = values[key]
     return value
 
 
 def project_dir(cdb, config):
     return os.path.join(cdb, f"{config['project']}-project")
+
+
+def usage_dir(cdb, config):
+    """The usage folder: what agents in other projects need to know to use this one.
+
+    The `usage_folder` setting says where it is kept. Left out, it is
+    <project>-usage inside the project folder.
+    """
+    name = config["project"]
+    folder = config.get("usage_folder")  # an optional setting
+    if not folder:
+        return os.path.join(project_dir(cdb, config), f"{name}-usage")
+    return rel(from_root(cdb, folder.replace(PROJECT_NAME, name)))
+
+
+def own_bundles(cdb, config):
+    """The bundles the commands write: the project folder, and a usage folder kept outside it."""
+    project, usage = project_dir(cdb, config), usage_dir(cdb, config)
+    separate = os.path.isdir(usage) and not within(usage, project)
+    return [project, usage] if separate else [project]
 
 
 def global_patterns(config):
@@ -821,16 +931,20 @@ def folder_listing(folder, toc_cmd, use_index):
 # ── Lint ─────────────────────────────────────────────────────────────────────
 
 
-def lint_links(path, body):
+def lint_links(path, body, usage):
+    """Problems with a file's links. In the usage folder, a link may not leave it."""
     problems = []
     for target in LINK_RE.findall(strip_code(without_comments(body))):
         if SCHEME_RE.match(target) or target.startswith("#"):
             continue
         target = unquote(target.split("#")[0])
+        linked = os.path.join(os.path.dirname(path), target)
         if target.startswith("/"):
             problems.append(f"{path}: link `{target}` starts with / — make it relative to the file")
-        elif not os.path.exists(os.path.join(os.path.dirname(path), target)):
+        elif not os.path.exists(linked):
             problems.append(f"{path}: broken link `{target}`")
+        elif usage and not within(linked, usage):
+            problems.append(text(LINK_LEAVES_USAGE, path=path, target=target))
     return problems
 
 
@@ -853,7 +967,8 @@ def unlisted_wip(wip):
     ]
 
 
-def lint_file(path, in_wip):
+def lint_file(path, in_wip, usage):
+    """Return (errors, warnings) for one file. `usage` is the usage folder when the file is in it."""
     errors, warnings = [], []
     content = read_text(path)
     meta, body = parse_frontmatter(content)
@@ -866,18 +981,19 @@ def lint_file(path, in_wip):
     status = meta.get("status", "")
     if status and status not in STATUSES:
         errors.append(f"{path}: status `{status}` is not one of {', '.join(STATUSES)}")
-    errors.extend(lint_links(path, body))
+    errors.extend(lint_links(path, body, usage))
     lines = content.count("\n")
     if lines > MAX_FILE_LINES and not in_wip:
         warnings.append(f"{path}: {lines} lines — split into a subfolder (max {MAX_FILE_LINES})")
     return errors, warnings
 
 
-def lint_bundle(bundle, is_project):
+def lint_bundle(bundle, own, usage):
     """Return (errors, warnings) for one bundle.
 
-    The project folder may hold no index.md. Any other bundle may, and a folder
-    that has one needs no descriptor.
+    A bundle the commands write (`own`) may hold no index.md. Any other bundle
+    may, and a folder that has one needs no descriptor. `usage` is the usage
+    folder, or "" when there is none: a file in it links only inside it.
     """
     errors, warnings = [], []
     for dirpath, dirnames, filenames in os.walk(bundle):
@@ -889,7 +1005,7 @@ def lint_bundle(bundle, is_project):
                     f"mount shared folders at the top level of {CONTEXT_DB}/ instead"
                 )
         dirnames[:] = [d for d in dirnames if visible(d)]
-        if is_project and INDEX_NAME in filenames:
+        if own and INDEX_NAME in filenames:
             errors.append(text(STRAY_INDEX, path=os.path.join(dirpath, INDEX_NAME)))
 
     wip = os.path.join(bundle, "wip")
@@ -897,15 +1013,16 @@ def lint_bundle(bundle, is_project):
         warnings.extend(unlisted_wip(wip))
     for folder in bundle_folders(bundle):
         files = folder_files(folder)
-        if not descriptor_path(folder) and (is_project or not index_path(folder)):
+        if not descriptor_path(folder) and (own or not index_path(folder)):
             name = os.path.basename(os.path.realpath(folder))
             errors.append(f"{folder}/: no folder descriptor — add {name}.md with a description")
         items = len(files) + len(folder_subfolders(folder))
         if items > MAX_FOLDER_ITEMS:
             warnings.append(f"{folder}/: {items} items — split into subfolders (aim for 5–10)")
         in_wip = os.path.commonpath([wip, folder]) == wip
+        in_usage = usage if usage and within(folder, usage) else ""
         for name in files:
-            file_errors, file_warnings = lint_file(os.path.join(folder, name), in_wip)
+            file_errors, file_warnings = lint_file(os.path.join(folder, name), in_wip, in_usage)
             errors.extend(file_errors)
             warnings.extend(file_warnings)
     return errors, warnings
@@ -991,22 +1108,28 @@ def folder_entry(label, folder):
     return text(FOLDER_ENTRY, label=label, folder=folder, description=description)
 
 
-def folders_section(cdb, config):
-    """The project folder first, then every background folder.
+def folders_section(cdb, config, usage_missing=False):
+    """The project folder first, then the usage folder, then every background folder.
 
     This list is generated on every call rather than committed, because a user
-    may mount private folders through gitignored symlinks.
+    may mount private folders through gitignored symlinks. A usage folder that
+    does not exist yet is left out, unless usage_missing asks for a line that
+    says so.
     """
-    project = project_dir(cdb, config)
+    project, usage = project_dir(cdb, config), usage_dir(cdb, config)
     lines = ["# Folders", ""]
     if os.path.isdir(project):
         lines.append(folder_entry("Project folder", project))
     else:
         lines.append(text(PROJECT_FOLDER_MISSING, folder=project))
+    if os.path.isdir(usage):
+        lines.append(folder_entry("Usage folder", usage))
+    elif usage_missing:
+        lines.append(text(USAGE_FOLDER_MISSING, folder=usage))
 
     for name in sorted(os.listdir(cdb)):
         folder = os.path.join(cdb, name)
-        if not visible(name) or name == CONF_DIR_NAME or name == os.path.basename(project):
+        if not visible(name) or name == CONF_DIR_NAME or folder in (project, usage):
             continue
         if os.path.islink(folder) and not os.path.exists(folder):
             lines.append(text(BROKEN_MOUNT, folder=folder))
@@ -1021,14 +1144,15 @@ def global_folders(cdb, config):
     Each pattern is a glob read from the repository root, wherever the command
     was run from; `~` and absolute paths work too. A folder that context-db/
     already holds, itself or through a symlink, is left out, so a pattern such
-    as ../*/context-db/*-project does not list this project twice.
+    as ../*/context-db/*-project does not list this project twice. So is this
+    project's own usage folder, which a pattern for usage folders also matches.
     """
-    root = os.path.dirname(os.path.abspath(cdb))
     seen = {os.path.realpath(os.path.join(cdb, name)) for name in os.listdir(cdb)}
+    if config.get("project"):  # configure reports the matches even before a project is set
+        seen.add(os.path.realpath(usage_dir(cdb, config)))
     found = []
     for pattern in global_patterns(config):
-        pattern = os.path.join(root, os.path.expanduser(pattern))
-        for match in sorted(glob.glob(pattern, recursive=True)):
+        for match in sorted(glob.glob(from_root(cdb, pattern), recursive=True)):
             real = os.path.realpath(match)
             if os.path.isdir(match) and real not in seen and not within(real, cdb):
                 seen.add(real)
@@ -1132,15 +1256,25 @@ def git_state_section(cdb, config):
 # project has moved since the note last changed.
 
 MAX_HISTORY_NOTES = 60
-OUTSIDE_CONTEXT_DB = (":/", f":(top,exclude){CONTEXT_DB}")
 
 
-def project_notes(bundle):
-    """Every note in the project folder outside wip/, descriptors with a body included."""
-    wip = os.path.join(bundle, "wip")
+def note_folders(cdb, config):
+    """The folders that hold notes: context-db/ and the usage folder. The rest is the project."""
+    return [cdb, usage_dir(cdb, config)]
+
+
+def outside_the_notes(cdb, config):
+    """Git pathspecs for the whole repository except the folders that hold notes."""
+    top = git("rev-parse", "--show-toplevel").strip()
+    folders = [folder for folder in note_folders(cdb, config) if within(folder, top)]
+    return [":/"] + [f":(exclude){folder}" for folder in folders]
+
+
+def bundle_notes(bundle, leave_out):
+    """Every note in a bundle, descriptors with a body included, outside the `leave_out` folders."""
     notes = []
     for folder in bundle_folders(bundle):
-        if os.path.commonpath([wip, folder]) == wip:
+        if any(within(folder, left_out) for left_out in leave_out):
             continue
         descriptor = descriptor_path(folder)
         for name in folder_files(folder):
@@ -1152,35 +1286,47 @@ def project_notes(bundle):
     return notes
 
 
-def linked_project_files(cdb, path, body):
-    """The files outside context-db/ that a note links to and that exist."""
+def linked_project_files(path, body, notes):
+    """The files a note links to that exist and lie outside `notes`, the folders that hold notes."""
     found = []
-    top = os.path.abspath(cdb)
+    tops = [os.path.abspath(folder) for folder in notes]
     for target in LINK_RE.findall(strip_code(without_comments(body))):
         if SCHEME_RE.match(target) or target.startswith(("#", "/")):
             continue
         linked = os.path.normpath(
             os.path.join(os.path.dirname(path), unquote(target.split("#")[0]))
         )
-        if os.path.exists(linked) and os.path.commonpath([top, os.path.abspath(linked)]) != top:
+        is_note = any(os.path.commonpath([top, os.path.abspath(linked)]) == top for top in tops)
+        if os.path.exists(linked) and not is_note:
             found.append(linked)
     return sorted(set(found))
 
 
-def git_history_section(cdb, config):
-    """Each note against the commits made outside context-db/ since it last changed."""
+def git_history_section(cdb, config, of_usage):
+    """Each note against the commits made to the rest of the project since it last changed.
+
+    The notes are the project folder's own: wip/ and the usage folder have their
+    own commands. With of_usage they are the usage folder's.
+    """
     if not current_branch():
         return "# Git History\n\n" + text(NO_HISTORY)
+    notes = note_folders(cdb, config)
+    outside = outside_the_notes(cdb, config)
+    usage = usage_dir(cdb, config)
+    if not of_usage:
+        found = bundle_notes(project_dir(cdb, config), [wip_dir(cdb, config), usage])
+    else:
+        found = bundle_notes(usage, []) if os.path.isdir(usage) else []
     rows = []  # (linked files changed, commits behind, line), most out of date sorts first
-    for path, body in project_notes(project_dir(cdb, config)):
+    for path, body in found:
         last = git("log", "-1", "--format=%h %as", "--", path).split()
         if not last:
             rows.append((False, -1, text(HISTORY_NOT_COMMITTED, path=path)))
             continue
         commit, date = last
-        behind = int(git("rev-list", "--count", f"{commit}..HEAD", "--", *OUTSIDE_CONTEXT_DB) or 0)
+        behind = int(git("rev-list", "--count", f"{commit}..HEAD", "--", *outside) or 0)
         line = text(HISTORY_ROW, path=path, date=date, commit=commit, behind=behind)
-        linked = linked_project_files(cdb, path, body)
+        linked = linked_project_files(path, body, notes)
         changed = (
             git("diff", "--name-only", f"{commit}..HEAD", "--", *linked).split() if linked else []
         )
@@ -1188,7 +1334,7 @@ def git_history_section(cdb, config):
             line += text(HISTORY_LINKED, files=", ".join(f"`{name}`" for name in changed))
         rows.append((bool(changed), behind, line))
     rows.sort(key=lambda row: (row[0], row[1]), reverse=True)
-    lines = [load_prompt("maintain-git", cdb=cdb), ""]
+    lines = [load_prompt("maintain-git"), ""]
     lines.extend(line for _, _, line in rows[:MAX_HISTORY_NOTES])
     if len(rows) > MAX_HISTORY_NOTES:
         lines.append(f"- ... ({len(rows) - MAX_HISTORY_NOTES} more notes)")
@@ -1232,23 +1378,29 @@ def cmd_prompt(args):
 
 
 def cmd_update(args):
+    """Store what was learned: in the project folder, or with --usage in the usage folder."""
     cdb = context_db_dir()
     config = require_config(cdb, args)
     commit = args.commit or args.push
+    usage = usage_dir(cdb, config)
+    toc_cmd = f"{script_command(config['python'])} toc"
     sections = [
         load_prompt(
-            "update",
+            "update-usage" if args.usage else "update",
             cdb=cdb,
             project_dir=project_dir(cdb, config),
+            usage_dir=usage,
+            usage_descriptor=os.path.join(usage, f"{os.path.basename(usage)}.md"),
             conf_dir=conf_dir(cdb),
             wip_dir=wip_dir(cdb, config),
-            toc_cmd=f"{script_command(config['python'])} toc",
-            check_cmd=f"{script_command(config['python'])} toc --check",
+            toc_cmd=toc_cmd,
+            toc_usage_cmd=f"{toc_cmd} {shlex.quote(usage)}",
+            check_cmd=f"{toc_cmd} --check",
             nothing_to_add=text(NOTHING_TO_ADD_BUT_COMMIT if commit else NOTHING_TO_ADD),
         ),
         load_prompt("not-a-mirror"),
         navigate_section(config),
-        folders_section(cdb, config),
+        folders_section(cdb, config, usage_missing=args.usage),
         load_prompt("format"),
     ]
     if commit:
@@ -1260,23 +1412,28 @@ def cmd_update(args):
 
 
 def cmd_maintain(args):
+    """Tidy the project folder, or with --usage the usage folder."""
     cdb = context_db_dir()
     config = require_config(cdb, args)
+    usage = usage_dir(cdb, config)
+    toc_cmd = f"{script_command(config['python'])} toc"
     emit(
         args,
         [
             load_prompt(
-                "maintain",
+                "maintain-usage" if args.usage else "maintain",
                 cdb=cdb,
                 project_dir=project_dir(cdb, config),
+                usage_dir=usage,
                 wip_dir=wip_dir(cdb, config),
-                toc_cmd=f"{script_command(config['python'])} toc",
-                check_cmd=f"{script_command(config['python'])} toc --check",
+                toc_cmd=toc_cmd,
+                toc_usage_cmd=f"{toc_cmd} {shlex.quote(usage)}",
+                check_cmd=f"{toc_cmd} --check",
             ),
             load_prompt("not-a-mirror"),
             navigate_section(config),
-            git_history_section(cdb, config) if args.use_git_diff else "",
-            folders_section(cdb, config),
+            git_history_section(cdb, config, args.usage) if args.use_git_diff else "",
+            folders_section(cdb, config, usage_missing=args.usage),
             load_prompt("format"),
             on_file_text(cdb, "maintain"),
             instruction_section(instruction_of(args)),
@@ -1436,23 +1593,33 @@ def cmd_configure(args):
     lines.append(f"- Suggested project name: `{name}` (from {name_source})")
     lines.append(f"- Suggested main branch: `{main_branch}` ({main_branch_source})")
 
-    for label, local in (("Shared settings", False), ("Your own settings", True)):
-        path = settings_path(cdb, local)
-        if not os.path.isfile(path):
-            lines.append(f"- {label} `{path}`: does not exist")
-            continue
+    # Every settings file, in the order it is read.
+    mains = {settings_path(cdb): "Shared settings", settings_path(cdb, True): "Your own settings"}
+    for path, named_by in settings_order(cdb):
+        label = f"{mains[path]} `{path}`" if not named_by else f"Settings file `{path}`"
+        label += f", named by `{named_by}`" if named_by else ""
         values, problem = load_settings(path)
-        if problem:
-            lines.append(f"- {label} `{path}`: {problem}. Rewrite it by hand first.")
-            continue
-        shown = ", ".join(f"`{key}: {value}`" for key, value in values.items()) or "empty"
-        lines.append(f"- {label} `{path}`: {shown}")
+        if not os.path.isfile(path):
+            lines.append(f"- {label}: does not exist")
+        elif problem:
+            lines.append(f"- {label}: {problem}. Rewrite it by hand first.")
+        else:
+            shown = ", ".join(f"`{key}: {value}`" for key, value in values.items()) or "empty"
+            lines.append(f"- {label}: {shown}")
 
     found = ", ".join(f"`{os.path.join(cdb, n)}/`" for n in project_folders(cdb)) or "none"
     lines.append(f"- Project folders found: {found}")
-    patterns = configured(cdb, "global_context")
+    known = {key: configured(cdb, key) for key in ("project", "usage_folder", "global_context")}
+    if known["project"]:
+        usage = usage_dir(cdb, known)
+        where = (
+            f"`usage_folder: {known['usage_folder']}`" if known["usage_folder"] else "the default"
+        )
+        state = "it exists" if os.path.isdir(usage) else "it does not exist yet"
+        lines.append(f"- Usage folder: `{usage}/` ({where}; {state})")
+    patterns = known["global_context"]
     if patterns:
-        folders = global_folders(cdb, {"global_context": patterns})
+        folders = global_folders(cdb, known)
         matched = ", ".join(f"`{folder}/`" for folder in folders) or "no folders"
         lines.append(f"- Global context: `global_context: {patterns}` matches {matched}")
     else:
@@ -1541,6 +1708,7 @@ def wants_setup(args):
         args.project
         or args.python
         or args.main_branch
+        or args.usage_folder
         or args.global_context
         or args.use_global_context
         or args.local
@@ -1560,6 +1728,7 @@ def cmd_setup(args):
         ("project", args.project),
         ("python", args.python),
         ("main_branch", args.main_branch),
+        ("usage_folder", args.usage_folder),
         ("global_context", " ".join(args.global_context or [])),
         ("use_global_context", args.use_global_context),
     ):
@@ -1595,6 +1764,12 @@ def cmd_setup(args):
     if ignored:
         print(f"Added {ignored} to .gitignore")
 
+    # The starters may name the command that runs this script; fill it in once,
+    # with the shared interpreter, because the ON files are committed.
+    python = config["python"]
+    # Everything else follows the settings as the commands will read them, with
+    # your own file and any named settings files applied.
+    config = load_config(cdb)
     name = config["project"]
     project = project_dir(cdb, config)
     if previous_project and previous_project != name:
@@ -1602,9 +1777,6 @@ def cmd_setup(args):
         if os.path.isdir(old):
             print(f"Note: the project folder is now {project}/. {old}/ is treated as background.")
 
-    # The starters may name the command that runs this script; fill it in once,
-    # with the shared interpreter, because the ON files are committed.
-    python = config["python"]
     created = []
     starters = os.path.join(SKILL_DIR, "starters")
     for command in ON_COMMANDS:
@@ -1622,25 +1794,30 @@ def cmd_setup(args):
         print(f"Created {path}")
     print()
     rerun = f"{script_command(config['python'])} toc --check"
-    sys.exit(run_check(project, rerun, is_project=True))
+    sys.exit(run_check(own_bundles(cdb, config), rerun, own=True, usage=usage_dir(cdb, config)))
 
 
 # ── toc ──────────────────────────────────────────────────────────────────────
 
 
-def run_check(bundle, rerun, is_project):
-    """Print the format report for a bundle and return the exit code.
+def run_check(bundles, rerun, own, usage):
+    """Print the format report for each bundle and return the exit code.
 
-    `rerun` is the command to print for checking again.
+    `rerun` is the command to print for checking again. `own` and `usage` are
+    what lint_bundle takes.
     """
-    errors, warnings = lint_bundle(bundle, is_project)
-    for label, problems in (("ERROR", errors), ("WARNING", warnings)):
-        for problem in problems:
-            print(f"{label}: {problem}")
-    if errors:
-        print(f"\n{len(errors)} error(s). Fix them, then run:  {rerun}")
+    failed = 0
+    for bundle in bundles:
+        errors, warnings = lint_bundle(bundle, own, usage)
+        for label, problems in (("ERROR", errors), ("WARNING", warnings)):
+            for problem in problems:
+                print(f"{label}: {problem}")
+        failed += len(errors)
+        if not errors:
+            print(f"{bundle}/ is a conformant OKF v{OKF_VERSION} bundle.")
+    if failed:
+        print(f"\n{failed} error(s). Fix them, then run:  {rerun}")
         return 1
-    print(f"{bundle}/ is a conformant OKF v{OKF_VERSION} bundle.")
     return 0
 
 
@@ -1664,24 +1841,31 @@ def cmd_toc(args):
         folder = os.path.normpath(args.folder)
         if not os.path.isdir(folder):
             sys.exit(f"Error: {folder}/ is not a folder.")
+        bundles = [bundle_root(folder)]
     else:
-        folder = project_dir(cdb, require_config(cdb, args))
+        config = require_config(cdb, args)
+        folder = project_dir(cdb, config)
         if not os.path.isdir(folder):
             sys.exit(f"Error: {folder}/ does not exist. Run /context-db configure.")
+        bundles = own_bundles(cdb, config)  # with no folder given, --check covers them all
 
-    # Only the project folder is context-db's own. Everywhere else an index.md
-    # that came with a folder is used. With no settings, no folder is the project's.
-    project = configured(cdb, "project")
-    own = os.path.join(cdb, f"{project}-project") if project else ""
+    # The project folder and the usage folder are context-db's own: the commands
+    # write them, so an index.md in one is never used. Everywhere else an index.md
+    # that came with a folder is. With no settings, no folder is context-db's own.
+    known = {key: configured(cdb, key) for key in ("project", "usage_folder")}
+    usage = usage_dir(cdb, known) if known["project"] else ""
+    own = [project_dir(cdb, known), usage] if known["project"] else []
+
+    def is_own(path):
+        return any(within(path, folder) for folder in own)
+
     if not args.check:
-        in_project = bool(own) and within(folder, own)
-        print(folder_listing(folder, toc_cmd, use_index=not in_project))
+        print(folder_listing(folder, toc_cmd, use_index=not is_own(folder)))
         return
-    bundle = bundle_root(folder)
-    if bundle != folder:
-        print(f"{folder}/ is inside {bundle}/; checking all of {bundle}/.")
-    rerun = f"{toc_cmd} --check" + (f" {shlex.quote(bundle)}" if args.folder else "")
-    sys.exit(run_check(bundle, rerun, is_project=bool(own) and within(bundle, own)))
+    if bundles[0] != folder:
+        print(f"{folder}/ is inside {bundles[0]}/; checking all of {bundles[0]}/.")
+    rerun = f"{toc_cmd} --check" + (f" {shlex.quote(bundles[0])}" if args.folder else "")
+    sys.exit(run_check(bundles, rerun, own=is_own(bundles[0]), usage=usage))
 
 
 # ── CLI ──────────────────────────────────────────────────────────────────────
@@ -1722,6 +1906,11 @@ def build_parser():
     )
 
     p = command("update")
+    p.add_argument(
+        "--usage",
+        action="store_true",
+        help="Write the usage folder instead: what other projects need to know to use this one",
+    )
     p.add_argument("--commit", action="store_true", help="Then commit the whole session")
     p.add_argument("--push", action="store_true", help="Then commit and push")
 
@@ -1743,6 +1932,12 @@ def build_parser():
     setting.add_argument("--python", help="Command that runs this script (Python 3.8 or newer)")
     setting.add_argument("--main-branch", help="Branch that wip --cleanup compares against")
     setting.add_argument(
+        "--usage-folder",
+        metavar="PATH",
+        help="Where the usage folder is kept, from the repository root; {project} stands for "
+        "the project name. Without it: <name>-usage inside the project folder",
+    )
+    setting.add_argument(
         "--global-context",
         action="append",
         metavar="GLOB",
@@ -1763,6 +1958,11 @@ def build_parser():
     )
 
     p = command("maintain")
+    p.add_argument(
+        "--usage",
+        action="store_true",
+        help="Tidy the usage folder instead: what other projects need to know to use this one",
+    )
     p.add_argument(
         "--use-git-diff",
         action="store_true",

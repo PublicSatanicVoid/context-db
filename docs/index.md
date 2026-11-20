@@ -105,6 +105,12 @@ with its description, built from the files on the spot. The agent reads that
 list, opens the one or two files it needs, and leaves the rest alone. Nothing is
 generated ahead of time, so the list is never out of date.
 
+The knowledge base is for agents working on your project. If other projects
+use yours, it can also keep a [usage folder](layout.md#the-usage-folder): the
+few notes an agent in one of those projects needs in order to use yours.
+`/context-db update --usage` writes it, and those projects read it from their
+own knowledge base.
+
 There is no database and no server, in spite of the name. It is a folder of text
 files and one Python script.
 
@@ -127,7 +133,8 @@ Before a task. Looks up what the knowledge base says about it.
 :link-type: doc
 
 After a task. Writes down what the next agent would need, if anything. `--push`
-also commits and pushes.
+also commits and pushes. `--usage` writes down what other projects need to know
+to use this one.
 :::
 
 :::{grid-item-card} /context-db wip
@@ -155,7 +162,8 @@ the files by hand afterwards.
 
 Now and then. Removes what the code and its comments already say, fixes what
 has drifted, and splits and reorganizes. `--use-git-diff` also reads the git
-history for what has gone out of date.
+history for what has gone out of date. `--usage` tidies the usage folder
+instead.
 :::
 ::::
 
@@ -185,6 +193,7 @@ context-db/
 │   ├── architecture.md
 │   ├── pci-handling.md
 │   ├── data-model/
+│   ├── acme-payments-usage/     optional: what other projects need to use yours
 │   └── wip/                     optional: wip.md lists the work in progress
 └── coding-standards/            a background folder shared with other projects
 ```
@@ -218,6 +227,7 @@ as they are now:
 
 # Subfolders
 
+* [acme-payments-usage](context-db/acme-payments-project/acme-payments-usage/) - How to use Acme Payments from another service — where its API is described, and the rules every caller must follow
 * [data-model](context-db/acme-payments-project/data-model/) - Database schema — the payment, refund, and merchant entities
 * [wip](context-db/acme-payments-project/wip/) - Work in progress, if the project records it
 

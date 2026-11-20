@@ -62,8 +62,9 @@ When the knowledge base and the code disagree, the agent is told to trust the
 code and to tell you.
 
 If your settings point to [global context](layout.md#global-context), which is
-knowledge kept in other repositories, `prompt` lists those folders as well. When
-the setting `use_global_context` is `false`, it lists them only when you ask:
+knowledge kept outside `context-db/`, such as the usage folders of other
+projects, `prompt` lists those folders as well. When the setting
+`use_global_context` is `false`, it lists them only when you ask:
 
 ```text
 /context-db prompt --use-global-context
@@ -119,6 +120,34 @@ A fourth retry caused the duplicate refunds in March.
 /context-db update --push
 ```
 
+### /context-db update --usage
+
+```text
+/context-db update --usage
+```
+
+`update` writes for agents working on your project. With `--usage` it writes
+for agents working in other projects that use yours. It writes the
+[usage folder](layout.md#the-usage-folder) and nothing else.
+
+What the agent does:
+
+1. Decides whether an agent in another project would use yours wrongly, or
+   fail to use it, without something that is not written down yet. Once the
+   folder exists, the answer is mostly no, and it stops there.
+2. The first time, creates the usage folder, with a description of your
+   project for the agents of other projects to see.
+3. Writes the bare minimum: where to start, which way in is right for which
+   job, the rules a caller must follow, and the mistakes callers make.
+4. Leaves out what your project already tells its users. It does not reprint
+   your API, your flags, or your docs. It says where they are.
+5. Leaves out inside knowledge, such as why the project is built the way it
+   is. That belongs in the project folder, where `update` puts it.
+6. Checks the format with `toc --check`.
+
+To say what should be recorded, write it on a new line, as with `update`.
+`--commit` and `--push` work with it as well.
+
 :::{dropdown} The text the agent receives
 :color: secondary
 
@@ -126,7 +155,13 @@ A fourth retry caused the duplicate refunds in March.
 :language: markdown
 ```
 
-The agent also receives [the rule every command
+With `--usage` it receives this in place of the text above:
+
+```{literalinclude} ../skill/context-db/prompts/update-usage.md
+:language: markdown
+```
+
+Either way, the agent also receives [the rule every command
 repeats](#the-rule-every-command-repeats), the folder list, and the format
 rules:
 
@@ -244,6 +279,10 @@ What the agent does:
    - When a note gets too long, should the agent split it while it is working
      in it, or only when you run `maintain`?
    - Which other repositories does this project rely on?
+   - Should `prompt` also list knowledge folders that are kept outside
+     `context-db/`, such as the usage folders of other projects?
+   - If other code depends on this project: where should the notes for the
+     projects that use it be kept?
    - Is there anything else the agent should always do?
 4. Ends with a short summary: the files it changed, and a reminder that this
    was only a first draft for you to edit.
@@ -311,6 +350,32 @@ history and the code show.
 `update` does none of this. It only touches the files that the session's lesson
 belongs in, so that recording one fact never turns into a reorganization.
 
+### /context-db maintain --usage
+
+```text
+/context-db maintain --usage
+```
+
+`maintain` tidies the project folder and leaves the
+[usage folder](layout.md#the-usage-folder) alone, apart from format errors.
+With `--usage` it tidies the usage folder instead, and judges each note for its
+reader: an agent in another project that uses yours and does not read its
+insides.
+
+What the agent does:
+
+1. Checks first. If nothing needs changing, it says so and stops.
+2. Opens what your project tells its users: the README, the docs, the
+   definition of the API, the help text, the examples. It deletes what a note
+   repeats from them, and says where it is instead.
+3. Moves inside knowledge to the project folder, or deletes it.
+4. Fixes what has drifted, and every path or URL that no longer leads anywhere.
+5. Makes each note stand alone: no links that leave the folder, and the
+   project called by its name.
+6. Splits, merges, and rewrites vague descriptions, as `maintain` does.
+
+`--use-git-diff` works with it, and lists the notes of the usage folder.
+
 :::{dropdown} The text the agent receives
 :color: secondary
 
@@ -319,6 +384,12 @@ when you ask for it, the folder list, the format rules, your `ON_MAINTAIN.md`,
 and your instruction.
 
 ```{literalinclude} ../skill/context-db/prompts/maintain.md
+:language: markdown
+```
+
+With `--usage` it receives this in place of the text above:
+
+```{literalinclude} ../skill/context-db/prompts/maintain-usage.md
 :language: markdown
 ```
 
@@ -402,9 +473,10 @@ creates whatever is missing, and never overwrites a file:
 python3 .claude/skills/context-db/context-db.py configure --project acme-payments
 ```
 
-Its options are `--project`, `--main-branch`, `--python`, `--global-context`,
-`--use-global-context`, and `--local KEY=VALUE` for a setting that applies only
-to you. [Setup](setup.md#settings) describes each setting.
+Its options are `--project`, `--main-branch`, `--python`, `--usage-folder`,
+`--global-context`, `--use-global-context`, and `--local KEY=VALUE` for a
+setting that applies only to you. [Setup](setup.md#settings) describes each
+setting.
 
 ## Listing and checking: toc
 
@@ -433,6 +505,9 @@ place to type it is CI:
 ```bash
 python3 .claude/skills/context-db/context-db.py toc --check
 ```
+
+With no folder after it, `toc --check` checks the project folder, and the usage
+folder as well when that is kept outside the project folder.
 
 A folder that comes from somewhere else may bring an `index.md` of its own.
 `toc` prints that file for such a folder, and builds the listing only when
@@ -495,7 +570,7 @@ heading shown.
 | `# How to Navigate Context-db` | `prompts/navigate.md` |
 | `# Context-db Is Not a Mirror of the Code` | `prompts/not-a-mirror.md` |
 | `# Work In Progress` | The list in `wip/wip.md`. Left out when it lists nothing. |
-| `# Folders` | The project folder and each background folder, one line each with its description. |
+| `# Folders` | The project folder, the usage folder if there is one, and each background folder, one line each with its description. |
 | `# Global Context` | Each folder outside `context-db/` that the `global_context` setting matches, one line each with its description. Left out when nothing matches, and when `use_global_context` is `false` and you did not add `--use-global-context`. |
 | `# Project Rules` | `configuration/ON_PROMPT.md` |
 | `# User Rules` | `configuration/ON_PROMPT.local.md`, if you have one. |
@@ -508,12 +583,16 @@ heading shown.
 | `# Context-db Update` | `prompts/update.md` |
 | `# Context-db Is Not a Mirror of the Code` | `prompts/not-a-mirror.md` |
 | `# How to Navigate Context-db` | `prompts/navigate.md` |
-| `# Folders` | The project folder and each background folder, one line each with its description. |
+| `# Folders` | The project folder, the usage folder if there is one, and each background folder, one line each with its description. |
 | `# File Format` | `prompts/format.md` |
 | `# Commit` | `prompts/commit.md`. Only with `--commit` or `--push`. |
 | `# Project Rules` | `configuration/ON_UPDATE.md` |
 | `# User Rules` | `configuration/ON_UPDATE.local.md`, if you have one. |
 | `# User Instruction` | What you typed, if anything. |
+
+With `--usage`, the first section is `# Context-db Update Usage` instead, from
+`prompts/update-usage.md`, and the folder list says so when the usage folder
+does not exist yet. The other sections are the same.
 
 `/context-db wip` sends:
 
@@ -556,11 +635,15 @@ branch. `--clear` sends its instructions, the list,
 | `# Context-db Is Not a Mirror of the Code` | `prompts/not-a-mirror.md` |
 | `# How to Navigate Context-db` | `prompts/navigate.md` |
 | `# Git History` | `prompts/maintain-git.md`, then one line for each note, read from git. Only with `--use-git-diff`. |
-| `# Folders` | The project folder and each background folder, one line each with its description. |
+| `# Folders` | The project folder, the usage folder if there is one, and each background folder, one line each with its description. |
 | `# File Format` | `prompts/format.md` |
 | `# Project Rules` | `configuration/ON_MAINTAIN.md` |
 | `# User Rules` | `configuration/ON_MAINTAIN.local.md`, if you have one. |
 | `# User Instruction` | What you typed, if anything. |
+
+With `--usage`, the first section is `# Context-db Maintain Usage` instead,
+from `prompts/maintain-usage.md`, and the git history lists the notes of the
+usage folder. The other sections are the same.
 
 An empty ON file adds no section, and neither does a missing one. With no
 instruction there is no `User Instruction` section.
@@ -604,5 +687,7 @@ To change what the agent is told, edit the ON file for that command: the
 project's file to change it for everyone, your `.local.md` file to change it for
 yourself.
 `settings.md` adds no text of its own. It tells the script the name of the
-project folder, the Python command, the main branch, and where to look for
-global context.
+project folder, the Python command, the main branch, where the usage folder is
+kept, and where to look for global context.
+[Other settings files](setup.md#settings-from-other-files) that it names can
+override any of that.

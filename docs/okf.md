@@ -91,7 +91,7 @@ These are the parts of the specification that context-db uses:
 
 | OKF | Section | How context-db uses it |
 | --- | --- | --- |
-| Bundles | 3 | Each top-level folder in `context-db/` is a bundle: the project folder, and every background folder. A folder found as [global context](layout.md#global-context) is one too. |
+| Bundles | 3 | Each top-level folder in `context-db/` is a bundle: the project folder, and every background folder. A folder found as [global context](layout.md#global-context) is one too, and so is a [usage folder](layout.md#the-usage-folder) that is kept outside the project folder. |
 | Concepts | 4 | Every Markdown file in those folders is a concept. |
 | `type` | 4.1 | Required, as in OKF. context-db suggests nine values and accepts any. |
 | `description` | 4.1 | OKF recommends it. context-db requires it, because it is what the agent reads to decide whether to open a file. |
@@ -161,6 +161,12 @@ One project folder, any number of background folders
   beside it, or read where they are as global context, and are read-only. See
   [Sharing](layout.md#sharing).
 
+A usage folder
+: What agents in other projects need to know to use this one is kept apart from
+  what agents working on it need. `update --usage` and `maintain --usage` write
+  it, and other projects mount it or find it as global context. See
+  [The usage folder](layout.md#the-usage-folder).
+
 Settings and rules kept outside the bundles
 : The settings file and the `ON_*.md` files sit next to the bundles, not inside
   them, so every Markdown file inside a bundle is a real concept.
@@ -195,11 +201,11 @@ gitignored notes.
 The cost is small. Someone browsing the folders on GitHub or in Obsidian sees
 the files without their one-line descriptions.
 
-This applies to the folder context-db writes, which is your project folder. The
-spec says that a reader may build an index on the fly when a folder has none,
-and that is what `toc` does. A background folder or a global folder may have
-been written by another OKF tool and come with an `index.md`. For such a folder
-`toc` prints the file it came with.
+This applies to the folders context-db writes, which are your project folder
+and your usage folder. The spec says that a reader may build an index on the
+fly when a folder has none, and that is what `toc` does. A background folder or
+a global folder may have been written by another OKF tool and come with an
+`index.md`. For such a folder `toc` prints the file it came with.
 
 ## Where context-db departs from the LLM wiki
 

@@ -16,6 +16,7 @@ example/
         │   ├── architecture.md
         │   ├── api-reference.md
         │   ├── data-model/
+        │   ├── acme-payments-usage/    what other projects need to use this one
         │   └── wip/                    wip.md lists refund-endpoint.md
         ├── coding-standards -> ../../shared/coding-standards
         └── git-standards -> ../../shared/git-standards
@@ -26,6 +27,7 @@ Try it:
 ```bash
 cd example/acme-payments-repo
 python3 .claude/skills/context-db/context-db.py prompt "add a refund endpoint"
+python3 .claude/skills/context-db/context-db.py update --usage
 python3 .claude/skills/context-db/context-db.py wip --list
 python3 .claude/skills/context-db/context-db.py toc
 python3 .claude/skills/context-db/context-db.py toc context-db/coding-standards

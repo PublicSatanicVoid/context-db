@@ -39,6 +39,11 @@ Plans and the status of ongoing work do not go in the main tree. If the
 project records them, they live in `{wip_dir}/`, which `/context-db wip`
 manages.
 
+What agents in other projects need to know to use this one does not go in the
+main tree either. It lives in the usage folder, `{usage_dir}/`, which
+`/context-db update --usage` writes. If this session produced something of
+that kind, say so in one line and suggest that command.
+
 The one place outside the project folder that you may write to is the ON files
 in `{conf_dir}/`. Each is inlined on every run of its command, so each line in
 them costs tokens every time. Put something there only when it must be seen

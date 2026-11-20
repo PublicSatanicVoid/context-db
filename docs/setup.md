@@ -146,13 +146,12 @@ main_branch: main
 | `python` | The command the agent uses to run the script. |
 | `main_branch` | The branch that `wip --cleanup` compares your current branch against. |
 
-Two more settings are optional. They point the agent at knowledge that is kept
-outside your repository. [Global context](layout.md#global-context) explains
-them.
+Three more settings are optional.
 
 | Setting | Meaning |
 | --- | --- |
-| `global_context` | Glob patterns that match knowledge folders outside `context-db/`, such as `../*/okc/*-usage.okf`. They are read from the top of your repository, and several are separated by spaces. |
+| `usage_folder` | Where the [usage folder](layout.md#the-usage-folder) is kept, as a path from the top of your repository, such as `okf/acme-payments-usage`. `{project}` in it stands for the project name. Left out, it is `<project>-usage/` inside the project folder. |
+| `global_context` | Glob patterns that match knowledge folders outside `context-db/`, such as `../*/okf/*-usage`. They are read from the top of your repository, and several are separated by spaces. [Global context](layout.md#global-context) explains them. |
 | `use_global_context` | `true`, or left out: every `prompt` lists those folders. `false`: only `/context-db prompt --use-global-context` does. |
 
 Edit them by hand. Anything below the `---` lines is yours for notes.
@@ -165,6 +164,56 @@ something different, such as a Python that lives in an unusual place:
 ```bash
 python3 .claude/skills/context-db/context-db.py configure --local python=/opt/python3.12/bin/python3
 ```
+
+### Settings from other files
+
+A settings file can name more settings files. They are plain files on disk that
+you write yourself, and they can live anywhere: in a repository your team
+shares, or in your home folder. Add a `settings_files` line by hand:
+
+```markdown
+---
+project: acme-payments
+python: python3
+main_branch: main
+settings_files: ../standards/context-db-settings.md
+---
+```
+
+Each file on that line is read after the file that names it, and whatever it
+sets overrides what was read before. It looks like `settings.md`: Markdown, with
+`key: value` lines at the top. Several are separated by spaces. A path is read
+from the top of your repository, and it can also start with `~` or `/`.
+
+This one is shared by a team that keeps every project's usage folder in `okf/`,
+and finds the others there:
+
+```markdown
+---
+usage_folder: okf/{project}-usage
+global_context: okf/*-usage ../*/okf/*-usage
+---
+```
+
+The files are read in this order. A later one overrides an earlier one, setting
+by setting:
+
+1. `settings.md`
+2. the files that `settings.md` names
+3. `settings.local.md`
+4. the files that `settings.local.md` names
+
+So name a file that everyone on the project has in `settings.md`, and a file
+that only you have in `settings.local.md`. Your own settings still win over the
+team's.
+
+No command creates or changes these files, and no flag sets the
+`settings_files` line. If a file on that line is missing or has no `---` block,
+the commands stop and say which file it is. `/context-db configure` still runs,
+and lists every settings file in the order it is read.
+
+Keep `python` in `settings.md` or `settings.local.md`. The agent reads that one
+line itself, from those two files, before it can run the script.
 
 ## Check it in CI
 

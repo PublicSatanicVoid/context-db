@@ -20,6 +20,9 @@ context-db/
 │   ├── data-model/
 │   │   ├── data-model.md
 │   │   └── entities.md
+│   ├── acme-payments-usage/     the usage folder, optional
+│   │   ├── acme-payments-usage.md
+│   │   └── calling.md
 │   └── wip/                     optional
 │       ├── wip.md               the list of work in progress
 │       └── refund-endpoint.md
@@ -28,8 +31,8 @@ context-db/
 
 ## The project folder
 
-`<name>-project/` holds what is specific to this repository. It is the only
-folder the commands write to.
+`<name>-project/` holds what is specific to this repository, for agents working
+on it. The commands write to it, and to nothing else in `context-db/`.
 
 What belongs in it:
 
@@ -46,17 +49,82 @@ over the code. A fact about one piece of code belongs in a comment next to it.
 Every command repeats this rule to the agent;
 [Commands](commands.md#the-rule-every-command-repeats) shows the text.
 
+## The usage folder
+
+The project folder is for agents working on your project. A usage folder is for
+agents working in other projects that use yours. It holds the bare minimum such
+an agent needs to know to use your project: where to start, which way in is
+right for which job, the rules a caller must follow that the interface does not
+enforce, and the mistakes callers make.
+
+It is optional, and nothing creates one until you ask:
+
+```text
+/context-db update --usage
+```
+
+It is a folder inside the project folder, named after the project:
+
+```text
+context-db/
+└── acme-payments-project/
+    ├── architecture.md              for agents working on acme-payments
+    └── acme-payments-usage/         for agents in projects that use it
+        ├── acme-payments-usage.md   describes the folder
+        └── calling.md
+```
+
+The rule that governs the whole knowledge base applies here too, for a
+different reader. A usage note never reprints an API, a schema, or a list of
+flags. Your README, your docs, and the definition of your API already say those
+things, and a copy drifts. The note says where they are and adds only what they
+leave out. Inside knowledge stays out as well: why the project is built the way
+it is, and how to change it, belong in the project folder.
+
+| Typed | What the agent does |
+| --- | --- |
+| `/context-db update --usage` | Writes down what other projects need to know, if anything is missing. |
+| `/context-db maintain --usage` | Removes what your project already tells its users, moves inside knowledge out, and fixes what has drifted. |
+
+`update` and `maintain` without the flag work on the project folder and leave
+the usage folder to these two.
+
+Other projects read the folder where it is. They [mount it](#sharing) as a
+background folder, or find it with [global context](#global-context). Because
+it is read from wherever it is mounted, a file in it links only to files inside
+the folder. To point at anything else, it gives a URL, or the path from the top
+of your repository.
+
+### Keeping it somewhere else
+
+Some teams keep what other projects read apart from the knowledge base. The
+`usage_folder` setting says where the folder is:
+
+```markdown
+---
+project: acme-payments
+python: python3
+main_branch: main
+usage_folder: okf/acme-payments-usage
+---
+```
+
+The path is read from the top of your repository. `{project}` in it stands for
+the project name, so `okf/{project}-usage` means the same as the line above. Use
+that form in a [settings file that several projects share](setup.md#settings-from-other-files).
+
 ## Background folders
 
 Every other folder in `context-db/` is a background folder. It holds knowledge
-that is not about this project in particular, such as coding standards, and it
-usually lives in another repository. The commands read background folders and
-never change them. [Sharing](#sharing) covers how to mount one.
+that is not about this project in particular, such as coding standards or the
+usage folder of a project that yours uses, and it usually lives in another
+repository. The commands read background folders and never change them.
+[Sharing](#sharing) covers how to mount one.
 
 ## Global context
 
-Some knowledge is better left where it is. A repository that other projects use
-can keep a folder of notes on how to use it, and each project that needs those
+Some knowledge is better left where it is. A project that other projects use
+keeps a [usage folder](#the-usage-folder), and each project that needs those
 notes can read them in place, with nothing mounted or copied. context-db calls
 this global context.
 
@@ -68,15 +136,17 @@ You say where to look with a setting, `global_context`, in
 project: acme-payments
 python: python3
 main_branch: main
-global_context: ../*/okc/*-usage.okf
+global_context: okf/*-usage ../*/okf/*-usage
 ---
 ```
 
-The value is a glob pattern that matches the folders themselves. It is read from
-the top of your repository, wherever the command is run from. This one matches
-every folder whose name ends in `-usage.okf`, inside the `okc/` folder of each
-repository next to yours. To use several patterns, separate them with spaces. A
-pattern can also start with `~` or `/`.
+Each value is a glob pattern that matches the folders themselves. Patterns are
+separated by spaces, and they are read from the top of your repository, wherever
+the command is run from. The first one here matches every folder whose name
+ends in `-usage` inside the `okf/` folder of your own repository. The second
+matches the same in each repository next to yours. A pattern can also start
+with `~` or `/`. For usage folders that are kept in the usual place, the
+pattern is `../*/context-db/*-project/*-usage`.
 
 `prompt` lists every folder that a pattern matches, after the project folder and
 the background folders, one line each with its description:
@@ -84,17 +154,18 @@ the background folders, one line each with its description:
 ```markdown
 # Global Context
 
-- **Global folder** `../acme-ledger/okc/ledger-usage.okf/`: How to call the ledger service, and the idempotency rules
-- **Global folder** `../acme-billing/okc/billing-usage.okf/`: Invoice numbering and the rate tables
+- **Global folder** `../acme-ledger/okf/ledger-usage/`: How to call the ledger service, and the idempotency rules
+- **Global folder** `../acme-billing/okf/billing-usage/`: Invoice numbering and the rate tables
 ```
 
 The agent looks into one only when its description matches the task, and it
 never changes one. `update`, `wip`, and `maintain` do not list them.
 
 The description comes from the file named after the folder, the same as for any
-[folder](#a-folder): `ledger-usage.okf/ledger-usage.okf.md` here. A folder that
+[folder](#a-folder): `ledger-usage/ledger-usage.md` here. A folder that
 `context-db/` already holds, such as a mounted background folder, is not listed
-a second time.
+a second time. Neither is your own usage folder, which `prompt` lists next to
+the project folder.
 
 A second setting decides when the list is sent:
 
@@ -175,6 +246,7 @@ prints one line for each, with its description:
 
 # Subfolders
 
+* [acme-payments-usage](context-db/acme-payments-project/acme-payments-usage/) - How to use Acme Payments from another service — where its API is described, and the rules every caller must follow
 * [data-model](context-db/acme-payments-project/data-model/) - Database schema — the payment, refund, and merchant entities
 * [wip](context-db/acme-payments-project/wip/) - Work in progress, if the project records it
 
@@ -238,9 +310,9 @@ subfolders do not.
 A folder like that often has no file named after it either. `prompt` then
 describes it by the names its index lists.
 
-Your project folder is the exception. context-db writes it and lists it from
-its files every time, so an `index.md` there is never read, and the checker
-reports it.
+Your project folder and your usage folder are the exception. context-db writes
+them and lists them from their files every time, so an `index.md` there is
+never read, and the checker reports it.
 
 ## Links
 
@@ -253,6 +325,10 @@ See the [retry policy](./retry-policy.md) and [the dispatcher](../../src/dispatc
 
 Do not start a link with `/`. GitHub reads that as the top of the repository,
 and the link breaks.
+
+A file in the [usage folder](#the-usage-folder) links only to files inside that
+folder. Other projects read it from wherever they mount it, and a link that
+leaves it leads nowhere there.
 
 ## The wip folder
 
@@ -283,8 +359,9 @@ warns about a plan that `wip.md` does not list.
 ## Sharing
 
 Some knowledge is not about one project. Coding standards, how your team uses
-git, and notes on a library are examples. Keep knowledge like that in one place
-and mount it into each project that needs it.
+git, and the [usage folder](#the-usage-folder) of a project that yours uses are
+examples. Keep knowledge like that in one place and mount it into each project
+that needs it.
 
 You mount it as a [background folder](#background-folders). `prompt` lists
 background folders next to the project folder.
@@ -297,7 +374,8 @@ use [global context](#global-context).
 context-db/
 ├── acme-payments-project/       this project's knowledge
 ├── coding-standards -> ...      shared, mounted with a symlink
-└── git-standards -> ...         shared, mounted with a symlink
+├── git-standards -> ...         shared, mounted with a symlink
+└── ledger-usage -> ...          how to use the ledger, mounted from its repository
 ```
 
 ### Three rules
@@ -362,7 +440,9 @@ python3 <path-to>/context-db.py toc context-db/coding-standards --check
 - a folder with no file named after it, unless it is outside the project folder
   and has an `index.md` of its own
 - a symlink inside the project folder or a background folder
-- an `index.md` file in the project folder, where context-db does not use one
+- an `index.md` file in the project folder or the usage folder, where
+  context-db does not use one
+- a link in the usage folder that leaves it
 
 It reports these as warnings: a file over 200 lines outside `wip/`, and a
 folder with more than 12 items.

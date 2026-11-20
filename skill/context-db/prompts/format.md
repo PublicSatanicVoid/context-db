@@ -38,7 +38,9 @@ its files, so the description is what makes a file findable. Never create an
 
 **Links.** Use real Markdown links, relative to the file that contains them:
 `[retry policy](./retry-policy.md)`, `[the dispatcher](../../src/dispatch.py)`.
-Never start a link with `/`.
+Never start a link with `/`. A file in the usage folder links only to files
+inside that folder, because other projects read it from wherever they mount
+it.
 
 **Size.** About 150 lines per file, 200 at most. A larger file becomes smaller
 files, or a subfolder of the same name. Files in `wip/` are exempt.

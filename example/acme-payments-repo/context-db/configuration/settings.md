@@ -11,6 +11,24 @@ Settings for the context-db skills. Edit them by hand whenever you like.
 - python: the command that runs the skills' script, Python 3.8 or newer.
 - main_branch: the branch that `/context-db wip --cleanup` compares against.
 
-settings.local.md in this folder, if it exists, overrides any of these for one
-user. It is gitignored.
+Four more are optional. Add them as lines of their own:
+
+- usage_folder: where the usage folder is kept, as a path from the top of the
+  repository, such as okf/{project}-usage. {project} stands for the project
+  name. Left out, it is <project>-usage/ inside the project folder.
+  `/context-db update --usage` writes that folder: what other projects need to
+  know to use this one.
+- global_context: glob patterns that match knowledge folders outside
+  context-db/, such as ../*/okf/*-usage. They are read from the top of the
+  repository, and several are separated by spaces. `/context-db prompt` lists
+  the folders they match.
+- use_global_context: false lists those folders only on
+  `/context-db prompt --use-global-context`. Left out, it is true.
+- settings_files: more settings files to read, such as
+  ~/.config/context-db/team.md, separated by spaces. Each is read after this
+  file and overrides it.
+
+settings.local.md in this folder, if it exists, is read after those and
+overrides any of this for one user. Every *.local.md file in this folder is
+gitignored.
 -->

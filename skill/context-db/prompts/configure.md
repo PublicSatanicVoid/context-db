@@ -9,10 +9,17 @@ files say. Keep the conversation short.
 
 Everything it writes lives in `{conf_dir}/`:
 
-- `{settings}`: the project name, the Python command, the main branch, and
-  where to find global context if the project has any, as `key: value` lines
-  between the `---` lines at the top. `{local_settings}`, if it exists,
-  overrides any of them for one user and is gitignored.
+- `{settings}`: the project name, the Python command, and the main branch, as
+  `key: value` lines between the `---` lines at the top. Optional lines say
+  where the usage folder is kept and where to find global context.
+  `{local_settings}`, if it exists, overrides any of them for one user and is
+  gitignored.
+- Either of those can name more settings files on a `settings_files` line,
+  such as a file a team shares between projects. A file named there is read
+  after the file that names it and overrides it. The user writes that line and
+  those files by hand: never create or edit them, and when a setting does not
+  seem to take effect, look for it in a file that is read later. Detected
+  State lists every settings file in the order it is read.
 - `ON_PROMPT.md`, `ON_UPDATE.md`, `ON_WIP.md`, `ON_CONFIGURE.md`,
   `ON_MAINTAIN.md`: the project's rules, shared with everyone.
   Whatever a file says outside HTML comments is added to the instructions the
@@ -119,26 +126,46 @@ Make each change as soon as the user answers, and show them the new text.
    repository is on disk and has its own `context-db/` folder, also offer to
    mount it: a symlink at the top level of `{cdb}/`, named after the folder it
    points to. A mount that is only for this user also goes in `.gitignore`.
-10. **Global context.** Global context is knowledge that stays in other
-    repositories on this machine. `prompt` finds their folders of notes with a
-    glob pattern and lists them after this project's own; nothing is mounted
-    or copied. Detected State says whether a pattern is set and what it
-    matches. Ask: "Should `prompt` also list knowledge folders from other
-    repositories on this machine?" Options: no (recommended, unless a pattern
-    is already set); yes. For yes, get the pattern. It is read from the top of
-    this repository and matches the folders themselves: `../*/okc/*-usage.okf`
-    matches every folder whose name ends in `-usage.okf` inside the `okc/`
-    folder of each repository next to this one. Then ask: "List them on every
+10. **Global context.** Global context is knowledge kept outside `{cdb}/`,
+    most often the usage folders of other projects. `prompt` finds those
+    folders with glob patterns and lists them after this project's own;
+    nothing is mounted or copied. Detected State says whether a pattern is set
+    and what it matches. Ask: "Should `prompt` also list knowledge folders
+    that are kept outside `{cdb}/`?" Options: no (recommended, unless a
+    pattern is already set); yes. For yes, get the patterns. Each is read from
+    the top of this repository and matches the folders themselves:
+    `../*/okf/*-usage` matches every folder whose name ends in `-usage` inside
+    the `okf/` folder of each repository next to this one, and `okf/*-usage`
+    matches the same inside this repository. Then ask: "List them on every
     `prompt`, or only when you add `--use-global-context`?" Options: every
     prompt (recommended for a handful of folders); only with the flag. Then
-    run this, with the pattern in single quotes, and `true` for every prompt
-    or `false` for only with the flag:
+    run this, with each pattern in single quotes after a `--global-context`
+    of its own, and `true` for every prompt or `false` for only with the flag:
 
         {setup_cmd} --global-context '<pattern>' --use-global-context <true or false>
 
-    For a pattern that fits only this user's machine, pass
-    `--local 'global_context=<pattern>'` in place of `--global-context`.
-11. **Anything else.** Tell the user in a sentence per file what the ON files
+    For patterns that fit only this user's machine, pass
+    `--local 'global_context=<patterns, separated by spaces>'` in place of
+    `--global-context`.
+11. **Usage folder.** The usage folder holds what agents in other projects
+    need to know to use this one. `/context-db update --usage` writes it, and
+    those projects mount it or find it as global context. Detected State says
+    where it is kept and whether it exists yet. Ask only when the user said in
+    question 4 that other code depends on this project, or when Detected State
+    shows a `usage_folder` setting: "Where should the notes for projects that
+    use this one be kept?" Options: inside the project folder, as
+    `{cdb}/<name>-project/<name>-usage/` (recommended, unless another place is
+    already set); in a folder of its own outside `{cdb}/`, such as
+    `okf/<name>-usage`. For a folder of its own, get its path from the top of
+    this repository and run:
+
+        {setup_cmd} --usage-folder <path>
+
+    For inside the project folder, delete the `usage_folder` line from
+    `{settings}` if it has one. Nothing is created now: the folder appears the
+    first time `/context-db update --usage` has something to write. If a usage
+    folder already exists in the old place, move it to the new one.
+12. **Anything else.** Tell the user in a sentence per file what the ON files
     make the agent do now. Then ask: "Is there anything else the agent should
     always do?" Options: no (recommended); yes, for `prompt` (while it works),
     `update` (what gets written down, how commits are made), `wip` (how work in

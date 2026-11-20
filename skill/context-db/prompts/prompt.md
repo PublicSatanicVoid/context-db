@@ -8,12 +8,14 @@ If a Work In Progress section appears below, start with the plans it lists
 that bear on the instruction. Then look into the folders listed under Folders,
 the way How to Navigate Context-db says.
 
-The project folder holds knowledge specific to this repository. Background
-folders hold general reference material shared from elsewhere, such as standards
-and domain knowledge. If a Global Context section appears below, it lists
-knowledge folders that live outside this repository, such as another project's
-notes on how to use it. The same test applies to all of them: open what bears
-directly on the instruction.
+The project folder holds knowledge specific to this repository, for agents
+working on it. A usage folder, if Folders lists one, is this project's too: it
+holds what agents in other projects need to know to use this one. Background
+folders hold knowledge shared from elsewhere, such as standards, domain
+knowledge, and the usage folders of projects this one uses. If a Global Context
+section appears below, it lists knowledge folders that are kept outside
+`{cdb}/`, most often other projects' usage folders. The same test applies to
+all of them: open what bears directly on the instruction.
 
 ## How to use what you find
 
