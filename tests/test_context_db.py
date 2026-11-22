@@ -279,6 +279,10 @@ def test_toc_reads_through_a_mounted_folder(example):
     assert "context-db/coding-standards/" in listing.split("# Files")[1]
     result = run(example, "toc", "context-db/coding-standards", "--check")
     assert result.returncode == 0, result.stdout
+    # At the top of the knowledge base a mount is listed, and the settings folder is not.
+    top = toc(example, "context-db")
+    assert "* [coding-standards](context-db/coding-standards/) - Shared coding standards" in top
+    assert "configuration" not in top
 
 
 def test_toc_works_on_any_folder_without_any_config(tmp_path):

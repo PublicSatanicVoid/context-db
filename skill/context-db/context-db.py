@@ -861,6 +861,22 @@ def folder_subfolders(folder):
     )
 
 
+def knowledge_folders(cdb):
+    """The folders at the top of context-db/ that hold notes.
+
+    A background folder is mounted there as a symlink, so a link counts here,
+    as it does nowhere else. The settings folder holds no notes.
+    """
+    return sorted(
+        name
+        for name in os.listdir(cdb)
+        if visible(name)
+        and name != CONF_DIR_NAME
+        and os.path.isdir(os.path.join(cdb, name))
+        and has_knowledge(os.path.join(cdb, name))
+    )
+
+
 def bundle_folders(bundle):
     """Every folder of the knowledge tree, the bundle root first."""
     folders = [bundle]
@@ -949,8 +965,11 @@ def toc_entry(title, target, description):
     return f"{line} - {description}" if description else line
 
 
-def folder_listing(folder, toc_cmd, use_index):
+def folder_listing(folder, toc_cmd, use_index, subfolders=None):
     """The OKF index of a folder. Paths are relative to the caller's cwd.
+
+    `subfolders` names the subfolders to list, for the one folder whose own
+    are not found the usual way: the top of context-db/.
 
     It is built now, from the folder's files. With use_index, a folder that
     comes with an index.md of its own that lists something is shown from that.
@@ -964,7 +983,7 @@ def folder_listing(folder, toc_cmd, use_index):
 
     descriptor = descriptor_path(folder)
     sub_lines = []
-    for name in folder_subfolders(folder):
+    for name in folder_subfolders(folder) if subfolders is None else subfolders:
         path = os.path.join(folder, name)
         sub_lines.append(toc_entry(name, f"{path}/", folder_description(path)))
 
@@ -1979,7 +1998,9 @@ def cmd_toc(args):
         return any(within(path, folder) for folder in own)
 
     if not args.check:
-        print(folder_listing(folder, toc_cmd, use_index=not is_own(folder)))
+        top = os.path.isdir(cdb) and os.path.samefile(folder, cdb)
+        mounted = knowledge_folders(folder) if top else None
+        print(folder_listing(folder, toc_cmd, use_index=not is_own(folder), subfolders=mounted))
         return
     if bundles[0] != folder:
         print(f"{folder}/ is inside {bundles[0]}/; checking all of {bundles[0]}/.")
