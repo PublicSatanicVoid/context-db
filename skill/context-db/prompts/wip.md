@@ -7,8 +7,9 @@ instruction at the end of this output. With no instruction, record what this
 session has been working on.
 
 1. Read `{wip_list}`, and the plan for the current work if it already has one.
-2. Update that plan, or create one if the work is new. Put in it what this
-   session has established about the work.
+2. Update that plan, or create one if the work is new. Bring it up to date
+   with what this session has established: put in what is new, and take out
+   what is done, settled, or no longer true.
 3. Update the work's line in `{wip_list}`, or add one. A new line is started
    today, {today}, on `{branch}`.
 4. Run:

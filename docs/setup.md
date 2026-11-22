@@ -100,10 +100,10 @@ Add the text in `.claude/skills/context-db/starters/AGENTS.md` to your
 `AGENTS.md` or `CLAUDE.md`.
 
 It tells the agent that the knowledge base exists, and that it should not read
-it unless you run a command. `configure` offers to add it for you. This matters. An agent that loads the whole
-knowledge base at the start of every session has less attention left for your
-task. [Motivation](index.md#motivation) covers the
-research.
+it unless you run a command. `configure` offers to add it for you. This
+matters. An agent that loads the whole knowledge base at the start of every
+session has less attention left for your task.
+[Motivation](index.md#motivation) explains why.
 
 ## 5. Use it
 
@@ -125,7 +125,12 @@ After it:
 That is the whole loop: `prompt`, work for as many turns as it takes, `update
 --push`. For work that runs over several sessions, you can also keep a
 record with `/context-db wip`; it is optional. Run `/context-db maintain` now and
-then to keep the knowledge base tidy. [Commands](commands.md) explains all five.
+then to cut the knowledge base back to what is still needed.
+[Commands](commands.md) explains all five.
+
+If other projects use yours, `/context-db update --usage` writes down the few
+things their agents need in order to use it, in a
+[usage folder](layout.md#usage-folders) that those projects read.
 
 ## Settings
 
@@ -150,7 +155,7 @@ Three more settings are optional.
 
 | Setting | Meaning |
 | --- | --- |
-| `usage_folder` | Where the [usage folder](layout.md#the-usage-folder) is kept, as a path from the top of your repository, such as `okf/acme-payments-usage`. `{project}` in it stands for the project name. Left out, it is `<project>-usage/` inside the project folder. |
+| `usage_folders` | Where your [usage folders](layout.md#usage-folders) are kept, as paths from the top of your repository, such as `okf/acme-payments-usage`. `{project}` in a path stands for the project name, and several paths are separated by spaces. Left out, there is one: `<project>-usage/` inside the project folder. |
 | `global_context` | Glob patterns that match knowledge folders outside `context-db/`, such as `../*/okf/*-usage`. They are read from the top of your repository, and several are separated by spaces. [Global context](layout.md#global-context) explains them. |
 | `use_global_context` | `true`, or left out: every `prompt` lists those folders. `false`: only `/context-db prompt --use-global-context` does. |
 
@@ -190,10 +195,13 @@ and finds the others there:
 
 ```markdown
 ---
-usage_folder: okf/{project}-usage
+usage_folders: okf/{project}-usage
 global_context: okf/*-usage ../*/okf/*-usage
 ---
 ```
+
+With that file, each project writes its own usage notes to `okf/<name>-usage/`,
+and reads the usage folders of the repositories checked out next to it.
 
 The files are read in this order. A later one overrides an earlier one, setting
 by setting:
@@ -209,8 +217,10 @@ team's.
 
 No command creates or changes these files, and no flag sets the
 `settings_files` line. If a file on that line is missing or has no `---` block,
-the commands stop and say which file it is. `/context-db configure` still runs,
-and lists every settings file in the order it is read.
+the commands stop and say which file it is. They also stop on a line that is
+not a setting, in any settings file, so that a misspelt name is not ignored
+without a word. `/context-db configure` still runs, and lists every settings
+file in the order it is read.
 
 Keep `python` in `settings.md` or `settings.local.md`. The agent reads that one
 line itself, from those two files, before it can run the script.

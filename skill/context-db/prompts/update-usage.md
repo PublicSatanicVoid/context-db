@@ -1,23 +1,24 @@
 # Context-db Update Usage
 
-The usage folder, `{usage_dir}/`, is for agents working in other projects that
-use this one. It holds the bare minimum such an agent needs to know to use
-this project successfully. Those projects mount the folder in their own
-knowledge base, or list it as global context, so its reader may never have
-seen this repository.
+A usage folder is for agents working in other projects that use this one. It
+holds the bare minimum such an agent needs to know to use this project
+successfully. Those projects mount the folder, or list it as global context,
+so its reader may never have seen this repository.
 
-Decide first whether there is anything to store. Think about using this
-project from outside: where to start, the rules its users must follow, the
-mistakes they make. If Folders below says the usage folder does not exist yet,
-consider the whole project. Otherwise consider what this session changed or
-showed, and the user instruction at the end of this output if there is one.
-Would an agent in another project use this one wrongly, or fail to use it,
-without it? If not, {nothing_to_add}.
+This project keeps its usage notes here: {usage_list}. Folders below describes
+each of those folders, or says that it does not exist yet.
 
-Once the folder exists, most runs change nothing. That is the normal outcome,
-not a failure. Every addition dilutes what is already there, and a project
-that already tells its users how to use it needs only a few lines here that
-say where to look.
+Decide first whether anything needs to change. Think about using this project
+from outside: where to start, the rules its users must follow, the mistakes
+they make. For a usage folder that does not exist yet, consider the whole
+project. Otherwise consider what this session changed or showed, and the user
+instruction at the end of this output if there is one. Would an agent in
+another project use this one wrongly, or fail to use it, without the change?
+If not, {nothing_to_add}.
+
+Once a usage folder exists, most runs change nothing. That is the normal
+outcome, not a failure. A project that already tells its users how to use it
+needs only a few lines here that say where to look.
 
 ## What belongs
 
@@ -39,7 +40,9 @@ where it is, and add only what it leaves out. The rule under Context-db Is Not
 a Mirror of the Code, below, holds here for a different reader: one who uses
 this project and does not read its insides. So the test for every line is
 whether that reader would learn it from what the project shows its users. If
-so, leave it out.
+so, leave it out. When something is missing there and would be better said
+there, tell the user so in one line, and write the note all the same: it goes
+once the project says it.
 
 Inside knowledge stays out too: why the project is built the way it is, its
 own conventions, how to change it, its plans. That is for agents working on
@@ -48,24 +51,29 @@ this project. It belongs in the project folder, `{project_dir}/`, which
 
 ## Where it goes
 
-Write inside the usage folder and nowhere else. If it does not exist yet,
-create it, starting with its descriptor, `{usage_descriptor}`. The description
-in the descriptor is the one line an agent in another project sees before it
-decides whether to look inside, so say there what this project is and what the
-notes cover.
+Write inside a usage folder and nowhere else. When there are several, each is
+for different readers: its description says who they are, or its name does
+while it does not exist yet. Put a note in the one whose readers need it, and
+never the same thing in two. Do not start a usage folder that is not listed.
+Adding one is the user's decision, made with the `usage_folders` setting in
+`{settings}`.
 
-When the folder exists, run `{toc_usage_cmd}` to see what is already
-documented, and open only the files whose descriptions suggest they cover the
-topic. Update an existing file when it covers the topic. Create a file only
-for a genuinely new topic. Delete what is no longer true, and what the project
-now tells its users itself. A smaller, accurate usage folder beats a larger
-one.
+Create a listed folder that does not exist yet when you have something for it,
+starting with its descriptor, which Folders names. The description there is
+the one line an agent in another project sees before it decides whether to
+look inside, so say what this project is and what the notes cover. The body of
+the descriptor is the place to say where the project describes its own
+interface.
 
-The folder is read from wherever another project mounts it, so it has to stand
-on its own:
+In a folder that exists, run `{toc_cmd} <folder>` first, to see what is already
+documented. Fix what this session made untrue, and delete what the project now
+tells its users itself.
 
-- Link only to files inside the usage folder. To point at anything else in
-  this project, give its URL if it is published. Otherwise name the project
+A usage folder is read from wherever another project mounts it, so it has to
+stand on its own:
+
+- Link only to files inside the same usage folder. To point at anything else
+  in this project, give its URL if it is published. Otherwise name the project
   and give the path from the top of its repository, as in "`api/openapi.yaml`
   in the acme-ledger repository".
 - Call the project by its name. "This project" and "here" mean something else
@@ -73,11 +81,14 @@ on its own:
 
 ## Finish
 
-Run:
+Read your change once more as an agent in another project would, cold, and cut
+every line that agent would not miss. Then run:
 
     {check_cmd}
 
-It checks the format of the project folder and of the usage folder. Fix what
+It checks the format of the project folder and of every usage folder. Fix what
 your change caused, and run it again until that is clean. If it reports
 problems in files you did not touch, leave them, and mention them in one line
 with a suggestion to run `/context-db maintain`.
+
+Tell the user in a line or two what you added, changed, and deleted.

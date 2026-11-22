@@ -38,5 +38,5 @@ The script prints instructions for you. Follow them. They may tell you to run
 
 Whenever you look into `context-db/`, list a folder with the `toc` helper,
 run the same way: `<python> .claude/skills/context-db/context-db.py toc <folder>`.
-It builds the folder's index from its files on the spot; there are no
-`index.md` files to read. `toc --check` checks the format after you write.
+It builds the folder's index from its files on the spot. `toc --check` checks
+the format after you write.

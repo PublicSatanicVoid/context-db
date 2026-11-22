@@ -15,7 +15,9 @@ folders hold knowledge shared from elsewhere, such as standards, domain
 knowledge, and the usage folders of projects this one uses. If a Global Context
 section appears below, it lists knowledge folders that are kept outside
 `{cdb}/`, most often other projects' usage folders. The same test applies to
-all of them: open what bears directly on the instruction.
+all of them: open what bears directly on the instruction. When the instruction
+involves another project, look for that project's usage folder among them
+before you read its code: it says where to start, and what its users get wrong.
 
 ## How to use what you find
 

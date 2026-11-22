@@ -2,6 +2,7 @@
 project: acme-payments
 python: python3
 main_branch: main
+global_context: ../*/okf/*-usage
 ---
 
 <!--
@@ -13,11 +14,12 @@ Settings for the context-db skills. Edit them by hand whenever you like.
 
 Four more are optional. Add them as lines of their own:
 
-- usage_folder: where the usage folder is kept, as a path from the top of the
-  repository, such as okf/{project}-usage. {project} stands for the project
-  name. Left out, it is <project>-usage/ inside the project folder.
-  `/context-db update --usage` writes that folder: what other projects need to
-  know to use this one.
+- usage_folders: where the usage folders are kept, as paths from the top of
+  the repository, such as okf/{project}-usage. {project} stands for the
+  project name, and several paths are separated by spaces. Left out, there is
+  one: <project>-usage/ inside the project folder. A usage folder holds what
+  other projects need to know to use this one, and
+  `/context-db update --usage` writes it.
 - global_context: glob patterns that match knowledge folders outside
   context-db/, such as ../*/okf/*-usage. They are read from the top of the
   repository, and several are separated by spaces. `/context-db prompt` lists

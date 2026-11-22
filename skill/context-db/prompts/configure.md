@@ -11,7 +11,7 @@ Everything it writes lives in `{conf_dir}/`:
 
 - `{settings}`: the project name, the Python command, and the main branch, as
   `key: value` lines between the `---` lines at the top. Optional lines say
-  where the usage folder is kept and where to find global context.
+  where the usage folders are kept and where to find global context.
   `{local_settings}`, if it exists, overrides any of them for one user and is
   gitignored.
 - Either of those can name more settings files on a `settings_files` line,
@@ -19,7 +19,10 @@ Everything it writes lives in `{conf_dir}/`:
   after the file that names it and overrides it. The user writes that line and
   those files by hand: never create or edit them, and when a setting does not
   seem to take effect, look for it in a file that is read later. Detected
-  State lists every settings file in the order it is read.
+  State lists every settings file in the order it is read, and marks a line
+  that is not a setting. The other commands stop on such a line, so offer to
+  correct it in `{settings}` or `{local_settings}`, or tell the user which
+  file to fix.
 - `ON_PROMPT.md`, `ON_UPDATE.md`, `ON_WIP.md`, `ON_CONFIGURE.md`,
   `ON_MAINTAIN.md`: the project's rules, shared with everyone.
   Whatever a file says outside HTML comments is added to the instructions the
@@ -147,23 +150,25 @@ Make each change as soon as the user answers, and show them the new text.
     For patterns that fit only this user's machine, pass
     `--local 'global_context=<patterns, separated by spaces>'` in place of
     `--global-context`.
-11. **Usage folder.** The usage folder holds what agents in other projects
+11. **Usage folders.** A usage folder holds what agents in other projects
     need to know to use this one. `/context-db update --usage` writes it, and
     those projects mount it or find it as global context. Detected State says
-    where it is kept and whether it exists yet. Ask only when the user said in
-    question 4 that other code depends on this project, or when Detected State
-    shows a `usage_folder` setting: "Where should the notes for projects that
-    use this one be kept?" Options: inside the project folder, as
-    `{cdb}/<name>-project/<name>-usage/` (recommended, unless another place is
-    already set); in a folder of its own outside `{cdb}/`, such as
-    `okf/<name>-usage`. For a folder of its own, get its path from the top of
-    this repository and run:
+    where this project's are kept and whether they exist yet. Ask only when
+    the user said in question 4 that other code depends on this project, or
+    when Detected State shows a `usage_folders` setting: "Where should the
+    notes for projects that use this one be kept?" Options: inside the project
+    folder, as `{cdb}/<name>-project/<name>-usage/` (recommended, unless
+    another place is already set); in a folder of its own outside `{cdb}/`,
+    such as `okf/<name>-usage`. For a folder of its own, get its path from the
+    top of this repository and run:
 
         {setup_cmd} --usage-folder <path>
 
-    For inside the project folder, delete the `usage_folder` line from
-    `{settings}` if it has one. Nothing is created now: the folder appears the
-    first time `/context-db update --usage` has something to write. If a usage
+    A project whose users fall into separate groups can keep a usage folder
+    for each: pass `--usage-folder` once for each path. For inside the project
+    folder, delete the `usage_folders` line from `{settings}` if it has one.
+    Nothing is created now: a folder appears the first time
+    `/context-db update --usage` has something to write in it. If a usage
     folder already exists in the old place, move it to the new one.
 12. **Anything else.** Tell the user in a sentence per file what the ON files
     make the agent do now. Then ask: "Is there anything else the agent should

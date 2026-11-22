@@ -91,13 +91,13 @@ These are the parts of the specification that context-db uses:
 
 | OKF | Section | How context-db uses it |
 | --- | --- | --- |
-| Bundles | 3 | Each top-level folder in `context-db/` is a bundle: the project folder, and every background folder. A folder found as [global context](layout.md#global-context) is one too, and so is a [usage folder](layout.md#the-usage-folder) that is kept outside the project folder. |
+| Bundles | 3 | Each top-level folder in `context-db/` is a bundle: the project folder, and every background folder. A folder found as [global context](layout.md#global-context) is one too, and so is a [usage folder](layout.md#usage-folders) that is kept outside the project folder. |
 | Concepts | 4 | Every Markdown file in those folders is a concept. |
 | `type` | 4.1 | Required, as in OKF. context-db suggests nine values and accepts any. |
 | `description` | 4.1 | OKF recommends it. context-db requires it, because it is what the agent reads to decide whether to open a file. |
 | `status` | 5.4 | Used as defined: `draft`, `stable`, or `deprecated`. |
 | Links | 6.1 | Ordinary Markdown links, always in the relative form. |
-| `index.md` | 8 | Built on demand by `toc`, in the list layout OKF gives, and never written to disk. A folder from elsewhere that brings its own is listed from it. See [Dynamic indexing](#dynamic-indexing). |
+| `index.md` | 8 | Built on demand by `toc`, in the list layout OKF gives, and never written to disk. You can keep `index.md` files as well, and a folder from elsewhere that brings its own is listed from it. See [Dynamic indexing](#dynamic-indexing). |
 | `okf_version` | 12 | context-db implements OKF 0.2; `--version` and `toc --check` say so. With no root `index.md`, nothing in the folder records it. |
 | Conformance | 11 | `toc --check` tests the three rules above, and a few stricter ones. |
 
@@ -157,15 +157,23 @@ A `wip/` folder
   extra keys.
 
 One project folder, any number of background folders
-: The commands write to the project folder only. Other bundles are mounted
-  beside it, or read where they are as global context, and are read-only. See
-  [Sharing](layout.md#sharing).
+: The commands write to the project folder and to your usage folders. Other
+  bundles are mounted beside the project folder, or read where they are as
+  global context, and are read-only. See [Sharing](layout.md#sharing).
 
-A usage folder
+Usage folders
 : What agents in other projects need to know to use this one is kept apart from
-  what agents working on it need. `update --usage` and `maintain --usage` write
-  it, and other projects mount it or find it as global context. See
-  [The usage folder](layout.md#the-usage-folder).
+  what agents working on it need, because the two have different readers.
+  `update --usage` and `maintain --usage` write it, and other projects mount it
+  or find it as global context. A usage folder is a bundle that stands on its
+  own, so any OKF tool can read it. See
+  [Usage folders](layout.md#usage-folders).
+
+Rules for what gets written
+: OKF does not say how much to write. context-db tells the agent on every
+  command that the knowledge base is not a copy of the code, and on every
+  command that writes to keep it small. See
+  [Commands](commands.md#the-rule-every-command-repeats).
 
 Settings and rules kept outside the bundles
 : The settings file and the `ON_*.md` files sit next to the bundles, not inside
@@ -175,7 +183,8 @@ Stricter checks
 : Besides the three OKF rules, `toc --check` fails on a missing description,
   a broken link, a folder with no descriptor, or a symlink inside a bundle. It
   also catches the common ways a description stops being valid YAML, such as a
-  colon followed by a space.
+  colon followed by a space. It warns about a description, a file, or a folder
+  that has grown too large to scan quickly.
 
 ## Dynamic indexing
 
@@ -201,11 +210,21 @@ gitignored notes.
 The cost is small. Someone browsing the folders on GitHub or in Obsidian sees
 the files without their one-line descriptions.
 
-This applies to the folders context-db writes, which are your project folder
-and your usage folder. The spec says that a reader may build an index on the
-fly when a folder has none, and that is what `toc` does. A background folder or
-a global folder may have been written by another OKF tool and come with an
-`index.md`. For such a folder `toc` prints the file it came with.
+The spec says that a reader may build an index on the fly when a folder has
+none, and that is what `toc` does. context-db works with the standard way as
+well:
+
+- A background folder or a global folder may have been written by another OKF
+  tool and come with an `index.md`. For such a folder `toc` prints the file it
+  came with.
+- You can keep `index.md` files in your own project folder and usage folders,
+  by hand or with a commit hook, for people who browse the files and for other
+  OKF tools. The checker accepts them, and warns when one no longer matches
+  its folder. `toc` goes on listing those folders from their files, because a
+  listing built from the files cannot be out of date.
+
+[Keeping index.md files anyway](layout.md#keeping-index-md-files-anyway) has
+the details.
 
 ## Where context-db departs from the LLM wiki
 
@@ -214,9 +233,10 @@ because the LLM cannot cheaply read those sources again.
 
 A code repository is different. The source is the code and its comments, and
 the agent can read them whenever it wants. A page that repeats them is a second
-copy that goes out of date. So context-db takes the format and not the habit of writing
-everything down. Most sessions add nothing.
-[Motivation](index.md#motivation) explains the reasoning.
+copy that goes out of date. So context-db takes the format and not the habit of
+writing everything down. Most sessions add nothing, and the agent is told to
+delete what is no longer needed. [Motivation](index.md#motivation) explains the
+reasoning.
 
 ## Using other tools
 

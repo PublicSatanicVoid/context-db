@@ -16,7 +16,9 @@ nothing else.
 
 A plan has `type: Plan`, `status: draft`, and `branch: <branch>` in its
 frontmatter. A good plan lets a fresh agent pick the work up cold: the goal, the
-approach, what is done, what is next, and what is undecided. Keep the whole plan
-current, and do not append a history. A plan follows the same rule as every
-note: link to the code it is about, and do not describe what the code already
-shows.
+approach, what is done, what is next, and what is undecided. It is opened at
+the start of every session on that work, so it holds what that agent needs in
+order to go on, and nothing else. Keep the whole plan current, and do not
+append a history. Say what is done in a line and cut the detail, because the
+code and the git log hold it. A plan follows the same rule as every note: link
+to the code it is about, and do not describe what the code already shows.

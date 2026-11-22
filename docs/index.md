@@ -105,11 +105,19 @@ with its description, built from the files on the spot. The agent reads that
 list, opens the one or two files it needs, and leaves the rest alone. Nothing is
 generated ahead of time, so the list is never out of date.
 
-The knowledge base is for agents working on your project. If other projects
-use yours, it can also keep a [usage folder](layout.md#the-usage-folder): the
-few notes an agent in one of those projects needs in order to use yours.
-`/context-db update --usage` writes it, and those projects read it from their
-own knowledge base.
+It keeps two kinds of knowledge apart, because they have different readers:
+
+| Kept in | Who reads it | What it holds |
+| --- | --- | --- |
+| The project folder | Agents working on your project | Conventions, decisions and their reasons, pitfalls, plans |
+| A [usage folder](layout.md#usage-folders) | Agents in other projects that use yours | The bare minimum they need to know to use it |
+
+A usage folder is to those agents what your docs are to people. It is optional,
+and `/context-db update --usage` writes it. It is in the same format as the
+rest of the knowledge base, so a project that uses yours lists it next to its
+own knowledge on every `/context-db prompt`, and its agent knows when to look
+inside. In the same way, your project can read the usage folders of the
+projects it uses.
 
 There is no database and no server, in spite of the name. It is a folder of text
 files and one Python script.
@@ -160,10 +168,10 @@ the files by hand afterwards.
 :link: commands
 :link-type: doc
 
-Now and then. Removes what the code and its comments already say, fixes what
-has drifted, and splits and reorganizes. `--use-git-diff` also reads the git
-history for what has gone out of date. `--usage` tidies the usage folder
-instead.
+Now and then. Removes what the code and the docs already say and what is no
+longer needed, fixes what has drifted, and splits and reorganizes.
+`--use-git-diff` also reads the git history for what has gone out of date.
+`--usage` tidies the usage folders instead.
 :::
 ::::
 
@@ -189,13 +197,14 @@ by asking you a few questions.
 ```text
 context-db/
 ├── configuration/               settings and rules, all plain Markdown
-├── acme-payments-project/       the project folder: your project's knowledge
+├── acme-payments-project/       the project folder: for agents working on your project
 │   ├── architecture.md
 │   ├── pci-handling.md
 │   ├── data-model/
-│   ├── acme-payments-usage/     optional: what other projects need to use yours
+│   ├── acme-payments-usage/     optional: for agents in projects that use yours
 │   └── wip/                     optional: wip.md lists the work in progress
-└── coding-standards/            a background folder shared with other projects
+├── coding-standards/            a background folder shared with other projects
+└── acme-ledger-usage -> ...     the usage folder of a project that yours uses
 ```
 :::
 
@@ -264,15 +273,37 @@ Nobody notices when it goes out of date, so the agent repeats what it gets
 wrong. Rules read at the start of a long session have faded by the time the
 work they apply to comes up.
 
+A memory of this kind has a cost that is easy to miss. A note is not free once
+it is written. Every later session has to read past it, someone has to keep it
+true as the code changes, and when nobody does, it misleads. A note earns its
+place only while it prevents more mistakes than it causes, and it is worth
+less as time passes: the work it was about gets finished, and the code it
+described gets replaced.
+
+An agent does not weigh that cost by itself. It is trained to finish the task
+in front of it, and what its work costs later is not part of that task. So it
+writes too much. It adds a note for everything it learned, sums up code it has
+just read, starts a second note where one already covers the topic, and adds a
+paragraph where a correction was needed. It does not delete. A knowledge base
+kept that way grows until it is in the way. The long view has to come from
+somewhere else, and context-db puts it in the instructions the agent gets each
+time it reads or writes.
+
 context-db keeps one rule above all, and repeats it to the agent on every
 command: the knowledge base is not a mirror of the code. Anything an agent can
-learn by reading the code and its comments stays there. A note that copies it is
-a second version, and it drifts out of date every time the code changes, while
-the next agent goes on trusting it. So the knowledge base keeps only what the
-code cannot say: why a decision was made, the conventions and pitfalls the code
-does not show, rules that come from outside, and the plan for the work in
-progress. `update` follows that rule when it writes. `maintain` goes looking for
-notes that break it.
+learn by reading the code, its comments, and your docs stays there. A note that
+copies it is a second version, and it drifts out of date every time the code
+changes, while the next agent goes on trusting it. So the knowledge base keeps
+only what the code cannot say: why a decision was made, the conventions and
+pitfalls the code does not show, rules that come from outside, and the plan for
+the work in progress. `update` follows that rule when it writes. `maintain`
+goes looking for notes that break it.
+
+A second rule goes with every command that writes: keep it small. Write the
+least that does the job. Keep each fact in one place. Rewrite what has changed,
+and do not add to it. Delete what is no longer needed. Ask when it is not clear
+whether something is still needed. The agent is told that leaving the knowledge
+base smaller is as good a result as leaving it larger.
 
 context-db hands the agent small pieces of text at set points in the work
 instead of one big file:
@@ -280,10 +311,11 @@ instead of one big file:
 - `prompt`, right before a task: how to list the knowledge base, the plans for
   the work in progress, and your rules. The agent opens only the notes that
   match the task.
-- `update`, after a task: what belongs in the knowledge base and what does not,
-  so that it stays small.
-- `maintain`, now and then: how to find notes that repeat the code or have
-  drifted from it, and remove them.
+- `update`, after a task: whether anything needs to change at all, what belongs
+  in the knowledge base and what does not, and which notes the session showed
+  to be wrong. Most of the time nothing changes.
+- `maintain`, now and then: how to find notes that repeat the code, have
+  drifted from it, or are no longer needed, and remove them.
 - `wip`, during long work: how to keep a short record of where things stand.
 
 The rest stays out of the agent's context. Where a note and the code disagree,
