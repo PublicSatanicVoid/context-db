@@ -21,10 +21,14 @@ restored it. Mixing "write down this session's lesson" with "clean up the
 knowledge base" made `update` do work when there was nothing to do. So:
 
 - `update` changes only the files its lesson belongs in, leaves format problems
-  in other files alone, and stops in one line when there is nothing to store.
+  in other files alone, and stops in one line when there is nothing to change.
+  Since 2026-11-22 it also fixes or deletes the notes that the session itself
+  showed to be wrong or not needed, and names any others it noticed and asks.
+  An agent that a note has just misled is the one that knows the note is wrong.
 - `maintain` does sweeps, checks first, and stops when nothing needs changing.
-  Its main job is enforcing the not-a-mirror rule (below). `--use-git-diff`
-  adds each note's age against the commits made to the project since.
+  Its main job is enforcing the not-a-mirror rule (below), and its second the
+  keep-small rule. `--use-git-diff` adds each note's age against the commits
+  made to the project since.
 
 ## configure, not init
 
@@ -61,3 +65,13 @@ restates what the code and its comments say) and `navigate.md` (see
 [dynamic-index.md](./dynamic-index.md)). The owner asked for the not-a-mirror
 rule to be stressed uniformly "throughout and in our main page, the motivation
 section". Edit the rule in that file, and keep the docs' wording of it in step.
+
+A third, `keep-small.md`, goes with every command that writes. The owner asked
+for it on 2026-11-22: agents "are too verbose", they duplicate and "write too
+much for the problem at hand", so `update` and `wip` need "concise
+instructions" that the agent is also keeping the knowledge base minimal, and
+"it's ok for agents to ask for guidance on this". The owner's reason: an agent
+is trained on the task in front of it and does not weigh what a note costs
+later, so the long view has to come from the instructions. The wording of the
+rule, the warning for a description over 300 characters, and the first-line
+"Delete this once ..." sentence are the implementing agent's choices.

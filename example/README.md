@@ -17,11 +17,11 @@ example/
     └── context-db/
         ├── configuration/              settings.md finds the ledger's usage folder;
         │                               ON_PROMPT.md carries a PCI reminder
-        ├── acme-payments-project/      the project folder
+        ├── acme-payments-project/      the project folder: project knowledge
         │   ├── architecture.md
         │   ├── api-reference.md
         │   ├── data-model/
-        │   ├── acme-payments-usage/    what other projects need to use this one
+        │   ├── acme-payments-usage/    its usage folder: usage knowledge
         │   └── wip/                    wip.md lists refund-endpoint.md
         ├── coding-standards -> ../../shared/coding-standards
         └── git-standards -> ../../shared/git-standards

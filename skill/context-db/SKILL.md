@@ -18,8 +18,8 @@ otherwise the one in `context-db/configuration/settings.md`, otherwise
 
 Sub-commands: `prompt`, `update`, `wip`, `configure`, `maintain`. With no
 sub-command, or with `--help`, the script prints the list. Flags the user
-typed on the command's line, such as `--push`, `--cleanup`, `--show-context`,
-and `--use-global-context`, go outside the quotes.
+typed on the command's line, such as `--push`, `--usage`, `--cleanup`,
+`--show-context`, and `--use-global-context`, go outside the quotes.
 
 Pass the user's instruction exactly as they typed it, as one single-quoted
 argument. Single quotes stop the shell from changing `$`, backticks, and `!`:
@@ -36,7 +36,8 @@ feed the text on standard input:
 The script prints instructions for you. Follow them. They may tell you to run
 `configure` with setting flags in the same way.
 
-Whenever you look into `context-db/`, list a folder with the `toc` helper,
-run the same way: `<python> .claude/skills/context-db/context-db.py toc <folder>`.
+Apart from reading that `python:` line, whenever you look into `context-db/`
+or any other knowledge folder the script names, list the folder with the `toc`
+helper, run the same way: `<python> .claude/skills/context-db/context-db.py toc <folder>`.
 It builds the folder's index from its files on the spot. `toc --check` checks
 the format after you write.

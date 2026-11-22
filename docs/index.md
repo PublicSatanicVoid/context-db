@@ -16,6 +16,41 @@ that agents can read.
 [What OKF is, where it came from, and how context-db uses it](okf.md).
 :::
 
+## Two kinds of knowledge
+
+context-db keeps two kinds of knowledge, because they have two readers.
+
+| | Project knowledge | Usage knowledge |
+| --- | --- | --- |
+| Who it is for | Agents working on your project | Agents in other projects that use yours |
+| What it holds | Decisions and their reasons, conventions, pitfalls, plans | Where to start, the rules for calling your project, the mistakes its users make |
+| Where it is kept | The project folder, `<name>-project/`, in `context-db/` | A [usage folder](layout.md#usage-folders), `<name>-usage/`. There can be several. |
+| What writes it | `update`, `wip`, and `maintain` | `update --usage` and `maintain --usage` |
+| When it is read | First, on every task in your project | In a project that uses yours, when a task there involves your project |
+
+Project knowledge is internal. It drives the work on your project from day to
+day, and nobody outside the project needs it. Usage knowledge is external. It
+is to agents in other projects what your docs are to people, and it is
+optional.
+
+The two work together, because both are folders of short notes in the same
+format. A project
+[mounts the usage folders of the projects it uses, or finds them with one line of settings](layout.md#how-another-project-reads-it).
+From then on every `/context-db prompt` lists them next to its own project
+folder, and the agent looks into one the same way it looks into its own notes.
+So what another project says about using it is as easy to reach as what your
+project knows about itself.
+
+Your own project knowledge still comes first. The agent starts there on every
+task, because it applies to everything done in your repository. It looks into
+another project's usage folder when the task involves that project, and before
+it reads that project's code.
+
+Both are standard OKF. The index of each folder is built on the fly from its
+notes, so by default neither kind has `index.md` files to keep in step. You can
+[keep `index.md` files as well](layout.md#keeping-index-md-files-anyway),
+and context-db works with both.
+
 ## Example
 
 Before a task, type the command, then the task on a new line. It needs no
@@ -44,6 +79,9 @@ When the work is done:
 
 The agent writes down anything the next agent would need, then commits and
 pushes. Most of the time there is nothing to write down, and it says so.
+
+`--push` is optional. So is `--commit`, which commits and does not push. With
+neither, the agent leaves the commit to you.
 
 ## Benefits
 
@@ -105,20 +143,6 @@ with its description, built from the files on the spot. The agent reads that
 list, opens the one or two files it needs, and leaves the rest alone. Nothing is
 generated ahead of time, so the list is never out of date.
 
-It keeps two kinds of knowledge apart, because they have different readers:
-
-| Kept in | Who reads it | What it holds |
-| --- | --- | --- |
-| The project folder | Agents working on your project | Conventions, decisions and their reasons, pitfalls, plans |
-| A [usage folder](layout.md#usage-folders) | Agents in other projects that use yours | The bare minimum they need to know to use it |
-
-A usage folder is to those agents what your docs are to people. It is optional,
-and `/context-db update --usage` writes it. It is in the same format as the
-rest of the knowledge base, so a project that uses yours lists it next to its
-own knowledge on every `/context-db prompt`, and its agent knows when to look
-inside. In the same way, your project can read the usage folders of the
-projects it uses.
-
 There is no database and no server, in spite of the name. It is a folder of text
 files and one Python script.
 
@@ -140,9 +164,9 @@ Before a task. Looks up what the knowledge base says about it.
 :link: commands
 :link-type: doc
 
-After a task. Writes down what the next agent would need, if anything. `--push`
-also commits and pushes. `--usage` writes down what other projects need to know
-to use this one.
+After a task. Writes down what the next agent would need, if anything. `--usage`
+writes down what other projects need to know to use this one. Optional:
+`--commit` also commits, and `--push` commits and pushes.
 :::
 
 :::{grid-item-card} /context-db wip
@@ -197,11 +221,11 @@ by asking you a few questions.
 ```text
 context-db/
 ├── configuration/               settings and rules, all plain Markdown
-├── acme-payments-project/       the project folder: for agents working on your project
+├── acme-payments-project/       the project folder: project knowledge
 │   ├── architecture.md
 │   ├── pci-handling.md
 │   ├── data-model/
-│   ├── acme-payments-usage/     optional: for agents in projects that use yours
+│   ├── acme-payments-usage/     a usage folder: usage knowledge (optional)
 │   └── wip/                     optional: wip.md lists the work in progress
 ├── coding-standards/            a background folder shared with other projects
 └── acme-ledger-usage -> ...     the usage folder of a project that yours uses

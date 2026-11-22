@@ -24,9 +24,9 @@ records the reasoning and what to re-check when OKF changes.
 4. **2026-08-11** — the spec moves from `knowledge-catalog/okf` to
    `GoogleCloudPlatform/open-knowledge-format`.
 5. **2026-11-06** — PR #63 there, by a Google collaborator, deprecates that
-   repository in favor of a vendor-neutral `open-knowledge-format` org where
-   v0.3 is in progress. The org had no public repositories as of 2026-11-10, so
-   v0.2 is the latest spec anyone can read.
+   repository in favor of a vendor-neutral `open-knowledge-format` org. The org
+   had no public repositories on 2026-11-10. By 2026-11-22 its repository was
+   public, with v0.3 as the spec (its v0.3 commit is dated 2026-10-23).
 
 ## Why adopt it
 
@@ -65,18 +65,34 @@ from real YAML unnoticed.
 
 ## Risks and what contains them
 
-- **The spec is moving.** Two renames between v0.1 and v0.2, three homes in five
-  months, v0.3 not yet visible. context-db uses only frontmatter with `type` and
+- **The spec is moving.** Two renames between v0.1 and v0.2, and three homes in
+  five months. context-db uses only frontmatter with `type` and
   `description`, `index.md`, links (all unchanged since v0.1) and `status`
   (v0.2). `OKF_VERSION` in the script is the one place the version is written.
-- **Non-concept Markdown inside a bundle breaks conformance** (OKF issue #58).
-  That is why the config and `ON_*.md` files live outside every bundle.
+- **Non-concept Markdown inside a bundle breaks conformance** in v0.2 (OKF
+  issue #58). That is why the config and `ON_*.md` files live outside every
+  bundle.
 
-## When v0.3 appears
+## v0.3 is out, and context-db still targets 0.2
 
-Read its change list for anything touching `type`, `description`, `status`,
-`index.md`, `okf_version`, or link forms. Update `OKF_VERSION`, the docs page,
-and the timeline there.
+Delete this section once `OKF_VERSION`, the docs page, and its timeline say
+0.3.
+
+What the v0.3 change list (its section 13) means here, read on 2026-11-22:
+
+- Nothing context-db writes stops conforming. Conformance got looser: a `.md`
+  file without `type` is no longer an error, only not a concept.
+- Relative links are no longer a departure. The spec stopped recommending the
+  `/` form and requires readers to resolve both.
+- A root `index.md` may carry `title`, `description`, and `license` beside
+  `okf_version`, and producers SHOULD ship one with `okf_version`. context-db
+  writes none, which is the one recommendation it does not follow. In a folder
+  from elsewhere it skips that frontmatter and does not use its `description`.
+- An unknown `status` value is now defined as not stable, and `superseded_by`
+  is new for deprecated notes.
+
+The checker, the tests, and the docs page, which quotes three conformance
+rules and section numbers, are all written against 0.2.
 
 ## Sources
 
@@ -86,7 +102,9 @@ and the timeline there.
   <https://cloud.google.com/blog/products/data-analytics/how-the-open-knowledge-format-can-improve-data-sharing>
 - Google Cloud, v0.2 announcement:
   <https://cloud.google.com/blog/products/data-analytics/okf-v0-2-adds-trust-signals>
-- Specification:
+- Specification, v0.2:
   <https://github.com/GoogleCloudPlatform/open-knowledge-format/blob/main/SPEC.md>
+- Specification, v0.3:
+  <https://github.com/open-knowledge-format/open-knowledge-format/blob/main/SPEC.md>
 - Move to a neutral org:
   <https://github.com/GoogleCloudPlatform/open-knowledge-format/pull/63>

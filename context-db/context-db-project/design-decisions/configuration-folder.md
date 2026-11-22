@@ -1,12 +1,10 @@
 ---
 type: Decision
 description:
-  Why every setting and rule is plain Markdown in context-db/configuration/
-  (settings.md plus gitignored settings.local.md, the ON files and their
-  per-user ON_<COMMAND>.local.md twins, one *.local.md gitignore glob), why
-  there is no update_mode key, why configure is only a helper, why the interpreter is
-  read by the agent, and why the settings key set is closed. Owner decisions of
-  2026-11-11; also called config layering.
+  Why every setting and rule is plain Markdown in context-db/configuration/,
+  with a gitignored .local.md twin for each user, why the set of settings is
+  closed and an unknown one stops the commands, and why configure is only a
+  helper. Also called config layering.
 ---
 
 # The configuration folder
@@ -24,9 +22,19 @@ is free for the user's notes and `configure` preserves it. `settings.local.md` i
 gitignored and overrides any key for one user (typically an interpreter path).
 
 The key set is closed: each key answers something the script cannot work out.
-A new key needs that same justification. Two optional keys were added on that
-ground on 2026-11-19, for [global context](./global-context.md); they are the
-only keys a project may leave out.
+A new key needs that same justification. Four keys are optional: two for
+[global context](./global-context.md), `usage_folders` (see
+[usage-folders.md](./usage-folders.md)), and `settings_files`, which names
+more settings files that override this one.
+
+A line that is not a setting stops every command but `configure`, which marks
+it. The implementing agent chose that on 2026-11-22, when `usage_folder`
+became `usage_folders`: a renamed or misspelt key that is ignored leaves the
+user on the default with no sign of why.
+
+`settings_files` and the files it names are the one thing `configure` never
+asks about or writes. The owner rejected a flag and a question for them on
+2026-11-20: "The config file should just be a file on disk".
 
 ## No update_mode
 

@@ -42,8 +42,8 @@ home.
 | What the code does | The code | You |
 | A fact about one piece of code | A comment next to that code | You. The agent suggests the comment. |
 | How to use your project, for people | Your README and your docs | You |
-| What an agent needs in order to work on your project, and cannot read from any of those | The [project folder](#the-project-folder) | `update` and `maintain` |
-| What an agent in another project needs in order to use yours, and your docs do not say | A [usage folder](#usage-folders) | `update --usage` and `maintain --usage` |
+| Project knowledge: what an agent needs in order to work on your project, and cannot read from any of those | The [project folder](#the-project-folder) | `update` and `maintain` |
+| Usage knowledge: what an agent in another project needs in order to use yours, and your docs do not say | A [usage folder](#usage-folders) | `update --usage` and `maintain --usage` |
 | Where the work in progress stands | The [`wip/` folder](#the-wip-folder) | `wip` |
 | Rules the agent must see every time a command runs | The [ON files](commands.md#the-rule-files-control-how-the-agent-behaves) | You, or `configure` |
 | What another project knows, or your whole team | [Background folders](#background-folders) and [global context](#global-context) | Their owners. Your agent only reads them. |
@@ -53,8 +53,9 @@ something that belongs in another row, it says so and writes no note.
 
 ## The project folder
 
-`<name>-project/` holds what is specific to this repository, for agents working
-on it.
+`<name>-project/` holds project knowledge: what is specific to this repository,
+for agents working on it. It is the knowledge the agent starts with on every
+task.
 
 What belongs in it:
 
@@ -73,12 +74,12 @@ comment next to it. Every command repeats this rule to the agent;
 
 ## Usage folders
 
-The project folder is for agents working on your project. A usage folder is for
-agents working in other projects that use yours. It is to them what your docs
-are to people. It is written in the same format as the rest of the knowledge
-base, so an agent in a project that uses yours reads it the way it reads its
-own notes: one line of description first, and a file only when the task calls
-for it.
+The project folder holds project knowledge, for agents working on your project.
+A usage folder holds usage knowledge, for agents working in other projects that
+use yours. It is to them what your docs are to people. It is written in the
+same format as the rest of the knowledge base, so an agent in a project that
+uses yours reads it the way it reads its own notes: one line of description
+first, and a file only when the task calls for it.
 
 A usage folder holds the bare minimum such an agent needs to know to use your
 project: where to start, which way in is right for which job, the rules a
@@ -88,7 +89,7 @@ callers make.
 It is not a second copy of your docs. A usage note never reprints an API, a
 schema, or a list of flags. Your README, your docs, and the definition of your
 API already say those things, and a copy drifts. The note says where they are
-and adds only what they leave out. Inside knowledge stays out as well: why the
+and adds only what they leave out. Project knowledge stays out as well: why the
 project is built the way it is, and how to change it, belong in the project
 folder.
 
@@ -120,7 +121,7 @@ context-db/
 | Typed | What the agent does |
 | --- | --- |
 | `/context-db update --usage` | Writes down what other projects need to know, if anything is missing. |
-| `/context-db maintain --usage` | Removes what your project already tells its users, moves inside knowledge out, and fixes what has drifted. |
+| `/context-db maintain --usage` | Removes what your project already tells its users, moves project knowledge out, and fixes what has drifted. |
 
 `update` and `maintain` without the flag work on the project folder and leave
 the usage folders to these two.
@@ -182,8 +183,15 @@ its own. The last belongs to the ledger, a project that it uses:
 - **Global folder** `../acme-ledger-repo/okf/acme-ledger-usage/`: How to use the Acme Ledger from another service — where its API is described, and the posting rules that the API does not enforce (entries that balance, amounts in minor units, never changing a posted entry)
 ```
 
-The agent is told to look for a project's usage folder before it reads that
+Reading your usage folder is no harder for that agent than reading its own
+notes. It runs the same `toc` listing on it and opens the same kind of short
+file. It is told to look into a project's usage folder before it reads that
 project's code, whenever a task involves that project. It never changes one.
+
+Its own project knowledge still comes first. The agent starts with its own
+project folder on every task, because what is there applies to everything done
+in its repository. Your usage folder applies only where the task involves your
+project.
 
 Because the folder is read from wherever it is mounted, a file in it links only
 to files inside the folder. To point at anything else, it gives a URL, or the
@@ -390,8 +398,8 @@ level down where a description matches, and opens one short file at the end.
 
 ## Dynamic indexing
 
-context-db keeps no `index.md` files. When the agent looks into a folder, it
-runs:
+By default context-db keeps no `index.md` files, in the project folder or in a
+usage folder. When the agent looks into a folder, it runs:
 
 ```bash
 python3 .claude/skills/context-db/context-db.py toc context-db/acme-payments-project

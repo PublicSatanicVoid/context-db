@@ -76,9 +76,9 @@ alone:
   fix them.
 - Never edit a background folder; it is owned elsewhere. Leave `{wip_dir}/` to
   `/context-db wip`.
-- A usage folder, if Folders below lists one, is written for agents in other
-  projects, and `/context-db maintain --usage` tidies it. Here, fix only what
-  the format check reports in it.
+- A usage folder, if Folders below lists one, holds usage knowledge, for
+  agents in other projects, and `/context-db maintain --usage` tidies it.
+  Here, fix only what the format check reports in it.
 
 ## Finish
 

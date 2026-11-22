@@ -4,10 +4,10 @@ Tidy this project's usage folders ({usage_list}), following the user
 instruction at the end of this output if there is one. With none, look at all
 of them. With a folder or a topic, look only there.
 
-A usage folder is for agents working in other projects that use this one. It
-holds the bare minimum such an agent needs to know to use this project
-successfully. Those projects mount the folder in their own knowledge base, or
-list it as global context, so its reader may never have seen this repository.
+A usage folder holds usage knowledge: the bare minimum that an agent working
+in another project needs to know to use this one successfully. Those projects
+mount the folder in their own knowledge base, or list it as global context, so
+its reader may never have seen this repository.
 
 Your main job is to enforce the rule under Context-db Is Not a Mirror of the
 Code, below, for that reader: one who uses this project and does not read its
@@ -39,7 +39,7 @@ definition of its API, its help text, its examples. Compare:
   flags, a configuration reference, anything the project already tells its
   users: delete it, and say where it is instead. Keep only what that leaves
   out.
-- **Inside knowledge.** Why the project is built the way it is, its own
+- **Project knowledge.** Why the project is built the way it is, its own
   conventions, how to change it, its plans. Someone who uses the project does
   not need it. If the next agent working on this project would, move it to the
   project folder, `{project_dir}/`. Otherwise delete it.
@@ -77,7 +77,7 @@ Then the shape of each folder:
   the user first. Cutting a note down is not deleting it.
 - When you split, move, or rename a file, search its usage folder for links to
   it and fix them.
-- Change nothing outside the usage folders, except to move inside knowledge
+- Change nothing outside the usage folders, except to move project knowledge
   into the project folder.
 
 ## Finish

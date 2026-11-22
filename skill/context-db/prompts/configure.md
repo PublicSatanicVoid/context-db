@@ -102,10 +102,10 @@ Make each change as soon as the user answers, and show them the new text.
    Make it say the answer, replacing the one that is there:
    - As it goes: "You may update the knowledge base as you work, without being
      asked, when you learn something the next agent would get wrong without it:
-     a correction from the user, a decision and its reason, a pitfall. Run
-     `{update_cmd} '<what you learned>'` and follow what it prints. Keep the
-     bar high, tell the user in one line each time, and never commit on your
-     own."
+     a correction from the user, a decision and its reason, a pitfall, a note
+     that turned out to be wrong. Run `{update_cmd} '<what you learned>'` and
+     follow what it prints. Keep the bar high, tell the user in one line each
+     time, and never commit on your own."
    - Only on command: "Write to the knowledge base only when the user runs
      `/context-db update`. At any other time, leave `{cdb}/` alone. If you learn
      something worth keeping, say so in one line and suggest that command."
@@ -126,9 +126,15 @@ Make each change as soon as the user answers, and show them the new text.
    and one line on what this project uses it for. Record them in `ON_PROMPT.md`
    under the line "Related repositories:", one per line: name, location, what it
    is for. Replace that list if it is already there. Do not clone anything. If a
-   repository is on disk and has its own `context-db/` folder, also offer to
-   mount it: a symlink at the top level of `{cdb}/`, named after the folder it
-   points to. A mount that is only for this user also goes in `.gitignore`.
+   repository is on disk and keeps a usage folder, which is what it writes for
+   the agents of projects that use it, also offer to mount that folder: a
+   symlink at the top level of `{cdb}/`, named after the folder it points to.
+   The folder is `context-db/<its name>-project/<its name>-usage/` there,
+   unless the `usage_folders` line in its
+   `context-db/configuration/settings.md` names other places. If it keeps
+   several, offer the one whose description fits what this project uses it
+   for. Do not mount its project folder, which is for agents working on that
+   project. A mount that is only for this user also goes in `.gitignore`.
 10. **Global context.** Global context is knowledge kept outside `{cdb}/`,
     most often the usage folders of other projects. `prompt` finds those
     folders with glob patterns and lists them after this project's own;
@@ -137,9 +143,10 @@ Make each change as soon as the user answers, and show them the new text.
     that are kept outside `{cdb}/`?" Options: no (recommended, unless a
     pattern is already set); yes. For yes, get the patterns. Each is read from
     the top of this repository and matches the folders themselves:
+    `../*/context-db/*-project/*-usage` matches the usage folder of every
+    repository next to this one that keeps it in the usual place, and
     `../*/okf/*-usage` matches every folder whose name ends in `-usage` inside
-    the `okf/` folder of each repository next to this one, and `okf/*-usage`
-    matches the same inside this repository. Then ask: "List them on every
+    the `okf/` folder of each of them. Then ask: "List them on every
     `prompt`, or only when you add `--use-global-context`?" Options: every
     prompt (recommended for a handful of folders); only with the flag. Then
     run this, with each pattern in single quotes after a `--global-context`
@@ -150,17 +157,17 @@ Make each change as soon as the user answers, and show them the new text.
     For patterns that fit only this user's machine, pass
     `--local 'global_context=<patterns, separated by spaces>'` in place of
     `--global-context`.
-11. **Usage folders.** A usage folder holds what agents in other projects
-    need to know to use this one. `/context-db update --usage` writes it, and
-    those projects mount it or find it as global context. Detected State says
-    where this project's are kept and whether they exist yet. Ask only when
-    the user said in question 4 that other code depends on this project, or
-    when Detected State shows a `usage_folders` setting: "Where should the
-    notes for projects that use this one be kept?" Options: inside the project
-    folder, as `{cdb}/<name>-project/<name>-usage/` (recommended, unless
-    another place is already set); in a folder of its own outside `{cdb}/`,
-    such as `okf/<name>-usage`. For a folder of its own, get its path from the
-    top of this repository and run:
+11. **Usage folders.** A usage folder holds usage knowledge: what agents in
+    other projects need to know to use this one. `/context-db update --usage`
+    writes it, and those projects mount it or find it as global context.
+    Detected State says where this project's are kept and whether they exist
+    yet. Ask only when the user said in question 4 that other code depends on
+    this project, or when Detected State shows a `usage_folders` setting:
+    "Where should the notes for projects that use this one be kept?" Options:
+    inside the project folder, as `{cdb}/<name>-project/<name>-usage/`
+    (recommended, unless another place is already set); in a folder of its own
+    outside `{cdb}/`, such as `okf/<name>-usage`. For a folder of its own, get
+    its path from the top of this repository and run:
 
         {setup_cmd} --usage-folder <path>
 

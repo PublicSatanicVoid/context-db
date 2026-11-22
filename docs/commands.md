@@ -69,13 +69,23 @@ What the agent does:
 
 1. Reads the plans listed in `wip/wip.md` that bear on the task, if there are
    any.
-2. Lists each knowledge folder that looks relevant, with `toc`, and lists a
-   subfolder only when its description matches.
-3. Opens only the files whose descriptions match the task.
-4. Gets on with the task, and checks what it read against the code.
+2. Lists the project folder first, with `toc`. Your project knowledge applies
+   to everything done in your repository, so it comes first on every task.
+3. Lists any other folder whose description matches the task: a background
+   folder of standards, or the usage folder of a project that the task
+   involves. It lists a subfolder only when its description matches.
+4. Opens only the files whose descriptions match the task.
+5. Gets on with the task, and checks what it read against the code.
 
 When the knowledge base and the code disagree, the agent is told to trust the
 code and to tell you.
+
+The usage knowledge of another project is read the same way as your own
+notes, with the same listing and the same short files. When a task involves a
+project that yours uses, the agent is told to look into that project's usage
+folder before it reads that project's code.
+[How another project reads it](layout.md#how-another-project-reads-it) shows
+what the agent sees.
 
 If your settings point to [global context](layout.md#global-context), which is
 knowledge kept outside `context-db/`, such as the usage folders of other
@@ -129,7 +139,8 @@ What the agent does:
 
 When what it learned belongs somewhere else, it says so and writes no note: a
 fact about one piece of code belongs in a comment, a plan belongs in `wip/`,
-and what other projects need belongs in a usage folder.
+and usage knowledge, which is what other projects need, belongs in a usage
+folder.
 [Where each thing goes](layout.md#where-each-thing-goes) has the whole list.
 
 Typed with nothing after it, the agent looks back over the session and decides
@@ -149,15 +160,20 @@ A fourth retry caused the duplicate refunds in March.
 /context-db update --push
 ```
 
+Both are optional, and you never have to use either. `--commit` commits
+everything the session changed and does not push. `--push` commits and pushes.
+With neither, `update` makes no commit, and you commit when and how you like.
+
 ### /context-db update --usage
 
 ```text
 /context-db update --usage
 ```
 
-`update` writes for agents working on your project. With `--usage` it writes
-for agents working in other projects that use yours. It writes your
-[usage folders](layout.md#usage-folders) and nothing else.
+`update` writes project knowledge, for agents working on your project. With
+`--usage` it writes usage knowledge, for agents working in other projects that
+use yours. It writes your [usage folders](layout.md#usage-folders) and nothing
+else.
 
 What the agent does:
 
@@ -170,7 +186,7 @@ What the agent does:
    job, the rules a caller must follow, and the mistakes callers make.
 4. Leaves out what your project already tells its users. It does not reprint
    your API, your flags, or your docs. It says where they are.
-5. Leaves out inside knowledge, such as why the project is built the way it
+5. Leaves out project knowledge, such as why the project is built the way it
    is. That belongs in the project folder, where `update` puts it.
 6. Fixes what the session made untrue, such as a rule for callers that has
    changed.
@@ -181,7 +197,9 @@ With [more than one usage folder](layout.md#more-than-one), it puts each note
 in the folder whose readers need it. It never starts a usage folder that your
 settings do not name.
 
-To say what should be recorded, write it on a new line, as with `update`.
+To say what should be recorded, write it on a new line, as with `update`. The
+agent then records that and does not go looking for more. Project knowledge in
+what you wrote is left out, and the agent tells you to run `update` for it.
 `--commit` and `--push` work with it as well.
 
 :::{dropdown} The text the agent receives
@@ -406,11 +424,11 @@ else it noticed, so that recording one fact never turns into a reorganization.
 /context-db maintain --usage
 ```
 
-`maintain` tidies the project folder and leaves your
+`maintain` tidies your project knowledge and leaves your
 [usage folders](layout.md#usage-folders) alone, apart from format errors.
-With `--usage` it tidies the usage folders instead, and judges each note for
-its reader: an agent in another project that uses yours and does not read its
-insides.
+With `--usage` it tidies your usage knowledge instead, and judges each note
+for its reader: an agent in another project that uses yours and does not read
+its insides.
 
 What the agent does:
 
@@ -418,7 +436,7 @@ What the agent does:
 2. Opens what your project tells its users: the README, the docs, the
    definition of the API, the help text, the examples. It deletes what a note
    repeats from them, and says where it is instead.
-3. Moves inside knowledge to the project folder, or deletes it.
+3. Moves project knowledge to the project folder, or deletes it.
 4. Fixes what has drifted, and every path or URL that no longer leads anywhere.
 5. Makes each note stand alone: no links that leave the folder, and the
    project called by its name.

@@ -40,18 +40,18 @@ Layout (the file format is described in prompts/format.md):
       settings.local.md         per-user overrides; gitignored
       ON_PROMPT.md ...          project rules added to a command, one file per command
       ON_PROMPT.local.md ...    one user's rules for that command; gitignored
-    <project>-project/          the project folder: for agents working on this project
+    <project>-project/          the project folder: project knowledge
       wip/wip.md                optional list of the work in progress
-      <project>-usage/          optional usage folder: for agents in other projects
-                                that use this one. `update --usage` writes it. The
-                                `usage_folders` setting can keep it elsewhere, and
-                                can name more than one
+      <project>-usage/          optional usage folder: usage knowledge. `update
+                                --usage` writes it. The `usage_folders` setting
+                                can keep it elsewhere, and can name more than one
     <anything-else>/            background folders, real or symlinked: read-only
 
-A project keeps two kinds of knowledge apart, because they have different
-readers: what an agent needs to work on it (the project folder) and what an
-agent needs to use it from another project (the usage folders). The commands
-write to those folders and to nothing else in the knowledge base.
+A project keeps two kinds of knowledge apart, because they have two readers.
+Project knowledge is what an agent needs to work on the project, and it lives
+in the project folder. Usage knowledge is what an agent in another project
+needs to use it, and it lives in the usage folders. The commands write to those
+folders and to nothing else in the knowledge base.
 
 Knowledge comes from three places. The project folder and the usage folders
 are this repository's own. Background folders are mounted beside the project
@@ -131,9 +131,9 @@ COMMAND_SUMMARIES = {
 Before a task. Looks up what the knowledge base says about it.
 """,
     "update": """
-After a task. Writes down what the next agent would need, if anything. --push
-also commits and pushes. --usage writes down what other projects need to know
-to use this one.
+After a task. Writes down what the next agent would need, if anything. --usage
+writes down what other projects need to know to use this one. Optional:
+--commit also commits, and --push commits and pushes.
 """,
     "wip": """
 Optional, for long work. Keeps a short list of the work in progress. --list,
@@ -2030,8 +2030,12 @@ def build_parser():
         action="store_true",
         help="Write the usage folders instead: what other projects need to know to use this one",
     )
-    p.add_argument("--commit", action="store_true", help="Then commit the whole session")
-    p.add_argument("--push", action="store_true", help="Then commit and push")
+    p.add_argument(
+        "--commit",
+        action="store_true",
+        help="Optional: then commit everything the session changed, and do not push",
+    )
+    p.add_argument("--push", action="store_true", help="Optional: then commit and push")
 
     p = command("wip")
     modes = p.add_mutually_exclusive_group()

@@ -1,20 +1,20 @@
 # Context-db Update Usage
 
-A usage folder is for agents working in other projects that use this one. It
-holds the bare minimum such an agent needs to know to use this project
-successfully. Those projects mount the folder, or list it as global context,
-so its reader may never have seen this repository.
+A usage folder holds usage knowledge: the bare minimum that an agent working
+in another project needs to know to use this one successfully. Those projects
+mount the folder, or list it as global context, so its reader may never have
+seen this repository.
 
-This project keeps its usage notes here: {usage_list}. Folders below describes
-each of those folders, or says that it does not exist yet.
+This project keeps its usage notes here: {usage_list}. The Folders section
+below describes each of them, or says that it does not exist yet.
 
 Decide first whether anything needs to change. Think about using this project
 from outside: where to start, the rules its users must follow, the mistakes
-they make. For a usage folder that does not exist yet, consider the whole
-project. Otherwise consider what this session changed or showed, and the user
-instruction at the end of this output if there is one. Would an agent in
-another project use this one wrongly, or fail to use it, without the change?
-If not, {nothing_to_add}.
+they make. If there is a user instruction at the end of this output, it says
+what to consider, and you look no further. With none, consider what this
+session changed or showed, and for a usage folder that does not exist yet, the
+whole project. Would an agent in another project use this one wrongly, or fail
+to use it, without the change? If not, {nothing_to_add}.
 
 Once a usage folder exists, most runs change nothing. That is the normal
 outcome, not a failure. A project that already tells its users how to use it
@@ -44,10 +44,11 @@ so, leave it out. When something is missing there and would be better said
 there, tell the user so in one line, and write the note all the same: it goes
 once the project says it.
 
-Inside knowledge stays out too: why the project is built the way it is, its
+Project knowledge stays out too: why the project is built the way it is, its
 own conventions, how to change it, its plans. That is for agents working on
 this project. It belongs in the project folder, `{project_dir}/`, which
-`/context-db update` writes.
+`/context-db update` writes. When the session or the user instruction holds
+some, say so in one line and suggest that command.
 
 ## Where it goes
 

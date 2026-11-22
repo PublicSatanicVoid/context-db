@@ -1,10 +1,10 @@
 ---
 type: Convention
 description:
-  How the docs and README must read — plain, clear, simple, not AI-sounding; no
-  first person; the words to use (project folder, background folder, skills);
-  how to show a command in an example (instruction on a new line, never in
-  quotes). Owner feedback from 2026-11-10 and what it means in practice.
+  How the docs and README must read — plain, simple, not AI-sounding, no first
+  person, ideas and not studies; the words to use (project knowledge, usage
+  knowledge, project folder, background folder); how to show a command in an
+  example
 ---
 
 # Voice
@@ -50,16 +50,32 @@ Flags stay on the command's line. Only the terminal form keeps quotes
 No "we" or "I". Address the reader as "you". "Copy the skill into your project",
 not "We recommend copying the skill."
 
+## Ideas, not studies
+
+The docs argue from ideas and cite no studies. The owner, 2026-11-22: "do not
+have any thing about studies. Just keep in general, idea based. No need to
+appeal to authority, or if we do briefly." The ideas "should hold together on
+their own". The credit to Karpathy and the OKF history stay.
+
 ## Words
 
 | Use | Not |
 | --- | --- |
+| project knowledge | internal knowledge, inside knowledge |
+| usage knowledge | external knowledge, API knowledge |
 | project folder | project bundle |
 | background folder | background bundle, external folder |
 | global context, global folder | external source, global bundle |
 | a set of skills | a tool, a framework, a system |
 | settings | configuration (except for the file name) |
 | knowledge base | database, store |
+
+The owner chose "project" and "usage" for the two kinds of knowledge on
+2026-11-22, over internal / external and development / usage. They are the
+names of the folders, the flag, and the setting, so nothing had to be renamed,
+and "external" also reads as knowledge that comes from outside, which is what a
+background folder is. "Internal" and "external" may explain the two once, as
+the README does.
 
 "Bundle" and "concept" are OKF's words. Use them only on the OKF page and when
 explaining how context-db maps onto OKF. The same vocabulary applies to the

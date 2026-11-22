@@ -1,13 +1,9 @@
 ---
 type: Decision
 description:
-  Why the project folder has no index.md files — context-db builds each folder's
-  OKF index on demand with the hidden `toc` helper, the way v0.0's TOC script
-  did, and the agent is told how on every command that reads the knowledge base.
-  Reverses v0.1's committed, generated indexes (owner decision, 2026-11-11).
-  When a folder's own index.md is used instead, for standard OKF folders that
-  context-db does not own (owner decision, 2026-11-19). Also why the listing is
-  flat Subfolders/Files and not grouped by type.
+  Why each folder's index is built on demand by `toc` and no index.md is kept
+  by default, when an index.md is read or only checked, and why the owner kept
+  this over index files built by a commit hook (2026-11-11, 11-19, 11-22)
 ---
 
 # Dynamic indexing
@@ -45,15 +41,37 @@ formats". So for a background folder or a
 [global folder](./global-context.md), `toc` prints the folder's own `index.md`
 when it has one and builds the listing when it has none, folder by folder.
 
-The project folder is the exception. That part is the implementing agent's
-choice, following the 2026-11-11 decision above: context-db writes that folder,
-so an `index.md` in it can only be a stale leftover. `toc` never reads one
-there, and `toc --check` reports it. The owner was told and let it stand.
+The folders the commands write, the project folder and the usage folders, are
+the exception: `toc` never reads an `index.md` there, because a listing built
+from the files cannot be stale. Until 2026-11-22 one there was an error. The
+owner then asked for standard OKF to be "first class", for someone who "might
+decide to have a commit hook that builds index.md files", and narrowed it to
+"Just we need to accept index.md files". So the check accepts one and warns
+when it does not match its folder. The listing says when a folder keeps one,
+because the agent cannot keep in step a file it does not know is there.
+context-db builds none itself.
 
 Two details the owner has not ruled on. An `index.md` with no entries falls
 back to the built listing. A folder with an `index.md` and no descriptor is
 described in `prompt` by the titles its index lists, because OKF gives a folder
 no description of its own.
+
+## Index files built by a commit hook: considered, rejected
+
+On 2026-11-22 the owner asked whether `index.md` should become the folder
+file, built by a commit hook, with "no more toc script at prompt time", so
+that the project would look less bespoke. After the answer below the owner
+kept things as they are: "this is a standard format".
+
+- Building the index on the fly is itself standard (above), and a reader may
+  never reject a folder for having no `index.md`.
+- A hook runs only at commit, and only in a clone that installed it, so the
+  agent would read a stale index in between. `toc` could not go away either:
+  mounted folders and notes not yet committed still need it.
+- A committed listing is a second copy of every description, which is what
+  2026-11-11 removed.
+- `index.md` cannot replace the descriptor. OKF gives a subfolder's index no
+  frontmatter, so it has nowhere to put the folder's description.
 
 ## The navigation instruction is core text
 

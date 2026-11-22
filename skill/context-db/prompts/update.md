@@ -33,8 +33,9 @@ in "Delete this once the v1 endpoints are gone."
 
 ## Where it goes
 
-Write inside the project folder, `{project_dir}/`. The folders listed under
-Folders below as background folders are owned elsewhere: never edit one.
+Write inside the project folder, `{project_dir}/`. It holds project knowledge:
+what agents working on this project need. The folders listed under Folders
+below as background folders are owned elsewhere: never edit one.
 
 Run `{toc_cmd} {project_dir}` first, to see what is already documented.
 
@@ -42,9 +43,9 @@ Some things have a home of their own, and do not go in the main tree:
 
 - Plans and the status of ongoing work: `{wip_dir}/`, which `/context-db wip`
   manages, if the project records them.
-- What agents in other projects need to know to use this one: a usage folder
-  ({usage_list}), which `/context-db update --usage` writes. Say so in one
-  line and suggest that command.
+- Usage knowledge, which is what agents in other projects need to know to use
+  this one: a usage folder ({usage_list}), which `/context-db update --usage`
+  writes. Say so in one line and suggest that command.
 - What must be seen on every run: an ON file in `{conf_dir}/`, the one place
   outside the project folder that you may write to. Each line there costs
   tokens on every run of its command, so ask the user first.

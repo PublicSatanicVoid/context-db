@@ -161,12 +161,13 @@ One project folder, any number of background folders
   bundles are mounted beside the project folder, or read where they are as
   global context, and are read-only. See [Sharing](layout.md#sharing).
 
-Usage folders
-: What agents in other projects need to know to use this one is kept apart from
-  what agents working on it need, because the two have different readers.
-  `update --usage` and `maintain --usage` write it, and other projects mount it
-  or find it as global context. A usage folder is a bundle that stands on its
-  own, so any OKF tool can read it. See
+Two kinds of knowledge
+: Project knowledge is what agents working on a project need. Usage knowledge
+  is what agents in other projects need to know to use it. They are kept
+  apart, in the project folder and in usage folders, because the two have
+  different readers. `update --usage` and `maintain --usage` write a usage
+  folder, and other projects mount it or find it as global context. A usage
+  folder is a bundle that stands on its own, so any OKF tool can read it. See
   [Usage folders](layout.md#usage-folders).
 
 Rules for what gets written

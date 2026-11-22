@@ -1,12 +1,10 @@
 ---
 type: Decision
 description:
-  Global context, the third source of knowledge after the project folder and
-  background folders — folders that stay in other repositories and are found by
-  glob patterns in settings (global_context, use_global_context). Why prompt is
-  the only command that lists them, how a matched folder is described, and
-  which parts the owner decided on 2026-11-19. Also called global folders,
-  external sources, okc usage folders.
+  Global context, the third source of knowledge — folders that stay in other
+  repositories, most often their usage folders, found by glob patterns in
+  settings. Why only prompt lists them, and which parts the owner decided.
+  Also called global folders.
 ---
 
 # Global context
@@ -19,8 +17,9 @@ repositories, found by a glob in the settings.
 ## What the owner decided
 
 - The patterns live in the settings file and are read "*from* the context-db
-  repo": from the repository root, not from the caller's cwd. The pattern the
-  owner expects to be common is `../*/okc/*-usage.okf`.
+  repo": from the repository root, not from the caller's cwd. The docs and the
+  example use the layout the owner described on 2026-11-20, usage folders kept
+  in `okf/`: `okf/*-usage` and `../*/okf/*-usage`.
 - Only `prompt` sends the list ("probably just on on-prompt").
 - A setting says whether every `prompt` sends it. When it is false, only
   `prompt --use-global-context` does.
@@ -38,15 +37,9 @@ last two were not pointed out.
   either out. Both are optional. The switch counts as true when it is left out,
   because someone who adds a pattern expects to see its folders.
 - A match that `context-db/` already holds is dropped, so
-  `../*/context-db/*-project` does not list this project twice. Nothing else is
-  dropped, so `../*/okc/*-usage.okf` also matches this repository's own `okc/`.
+  `../*/context-db/*-project` does not list this project twice. So is each of
+  the project's own usage folders, which `prompt` lists under Folders.
 - Without the flag, patterns that match nothing add no section, the way an
   empty wip list adds none. With the flag, the section says that there is none.
 - The words are "global context" for the feature and "global folder" for one
   matched folder.
-
-## Not settled
-
-- Nothing in this repository says what `okc` is. The docs explain the owner's
-  pattern as a glob and stop there, and the example project does not use global
-  context. Ask the owner before describing `okc` anywhere.

@@ -48,7 +48,10 @@ Added by the owner on 2026-11-11:
   owner's own task; its guide stays in this knowledge base and out of the docs.
 - On the Commands page, each command's section is headed by the full command,
   such as `/context-db update`.
-- The home page opens with a short Example of `prompt` and `update --push`,
+- The home page and the README open with Two kinds of knowledge: the two
+  terms, how a project reads another project's usage folder, and that its own
+  project knowledge comes first. The owner asked on 2026-11-22 for this "right
+  at the start". A short Example of `prompt` and `update --push` follows it,
   before Install. It is static; the owner asked for "not animated".
 - Sharing is a section of the Layout page, not a page of its own.
 - No logo in the header. The name there and the home page title both read
@@ -109,6 +112,10 @@ tried and not adopted stay in the picker for later.
   and the card body paints its own background. A border, shadow, or background
   on `.command-card` does nothing unless the selector starts with `.bd-content`.
   A top stripe sat in the CSS for days without ever showing.
+- Inline code in a table cell does not wrap. With a long piece of it, the
+  table scrolls sideways inside its container on a phone and its last column
+  is cut off, while the page itself reports no overflow. Keep code in table
+  cells short, and look at the table at 390px.
 - Every page is top level, so `html_sidebars` is emptied. A page added inside a
   subfolder needs that revisited.
 - Link colors are set per theme in `custom.css`. Check a new color in both light

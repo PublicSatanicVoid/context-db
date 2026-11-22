@@ -123,14 +123,18 @@ After it:
 ```
 
 That is the whole loop: `prompt`, work for as many turns as it takes, `update
---push`. For work that runs over several sessions, you can also keep a
-record with `/context-db wip`; it is optional. Run `/context-db maintain` now and
-then to cut the knowledge base back to what is still needed.
-[Commands](commands.md) explains all five.
+--push`. `--push` is optional: `--commit` commits and does not push, and with
+neither the commit is left to you. For work that runs over several sessions,
+you can also keep a record with `/context-db wip`; it is optional. Run
+`/context-db maintain` now and then to cut the knowledge base back to what is
+still needed. [Commands](commands.md) explains all five.
 
-If other projects use yours, `/context-db update --usage` writes down the few
-things their agents need in order to use it, in a
-[usage folder](layout.md#usage-folders) that those projects read.
+That loop keeps your project knowledge, which is for agents working on your
+project. If other projects use yours, `/context-db update --usage` writes down
+your usage knowledge: the few things their agents need in order to use it, in
+a [usage folder](layout.md#usage-folders) that those projects read. To read
+the usage folder of a project that yours uses, see
+[How another project reads it](layout.md#how-another-project-reads-it).
 
 ## Settings
 

@@ -13,6 +13,7 @@ every run. An empty file adds nothing.
 
 You may update the knowledge base as you work, without being asked, when you
 learn something the next agent would get wrong without it: a correction from
-the user, a decision and its reason, a pitfall. Run
-`{update_cmd} '<what you learned>'` and follow what it prints. Keep the bar
-high, tell the user in one line each time, and never commit on your own.
+the user, a decision and its reason, a pitfall, a note that turned out to be
+wrong. Run `{update_cmd} '<what you learned>'` and follow what it prints. Keep
+the bar high, tell the user in one line each time, and never commit on your
+own.

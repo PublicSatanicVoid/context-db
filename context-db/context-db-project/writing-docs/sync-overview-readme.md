@@ -13,8 +13,9 @@ description:
 | `docs/index.md`                            | Docs site        | yes   | 100–200 lines |
 | `context-db/<project>-project/overview.md` | Agents           | no    | 20–40 lines   |
 
-The README and the docs home page share their opening, "Example", "Benefits",
-"Install", "What it is", the commands, and "Motivation" almost word for word.
+The README and the docs home page share their opening, "Two kinds of
+knowledge", "Example", "Benefits", "Install", "What it is", the commands, and
+"Motivation" almost word for word.
 Only the links differ: full site URLs in the README, relative ones on the home
 page. The
 command table and cards are the `--help` summaries verbatim, which a test

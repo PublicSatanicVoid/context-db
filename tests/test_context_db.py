@@ -581,6 +581,18 @@ def test_help_readme_and_docs_home_describe_the_commands_alike():
     assert sections == USER_COMMANDS
 
 
+def test_readme_and_docs_home_open_with_the_two_kinds_of_knowledge():
+    """The owner wants the two kinds, and how they work together, explained before anything else."""
+    openings = []
+    for path in (REPO / "README.md", REPO / "docs" / "index.md"):
+        opening = path.read_text(encoding="utf-8").split("## Example")[0]
+        section = opening.split("## Two kinds of knowledge")[1]
+        assert "| | Project knowledge | Usage knowledge |" in section, path
+        assert "Your own project knowledge still comes first." in section, path
+        openings.append(re.sub(r"\]\([^)]*\)", "]()", section))  # only the links differ
+    assert openings[0] == openings[1]
+
+
 def sections_sent(output):
     """The top-level headings of a command's output, outside code blocks."""
     headings, fenced = [], False
@@ -771,9 +783,12 @@ def test_prompt_lists_folders_and_wip_then_rules_then_instruction(example):
         "- **Global folder** `../acme-ledger-repo/okf/acme-ledger-usage/`: How to use the Acme "
         "Ledger from another service" in global_context(out)
     )
-    assert "look for that project's usage folder among them before you read its code" in " ".join(
-        out.split()
-    )
+    flat_out = " ".join(out.split())
+    # Its own project knowledge comes first; another project's usage knowledge is read the same way.
+    assert "A background folder is any other folder in `context-db/`" in flat_out
+    assert "two kinds of knowledge, in one format, and you read both the same way" in flat_out
+    assert "It is in the project folder, and it comes first: start there on every task" in flat_out
+    assert "look into it before you read that project's code" in flat_out
     marks = (
         "# Work In Progress",
         "# Folders",
@@ -859,7 +874,7 @@ def test_prompt_lists_the_folders_the_global_context_setting_matches(workspace):
     marks = ("# Folders", "# Global Context", "# Project Rules", "# User Instruction")
     order = [out.index(mark) for mark in marks]
     assert order == sorted(order)
-    assert "If a Global Context section appears below" in " ".join(out.split())
+    assert "Global Context, when that section appears below" in " ".join(out.split())
     listing = toc(workspace, "../ledger/okc/ledger-usage.okf")
     assert "* [Title](../ledger/okc/ledger-usage.okf/calling.md) - Calling ledger" in listing
     assert "Read from `../rates/okc/rates-usage.okf/index.md`" in toc(
@@ -962,7 +977,8 @@ def test_configure_reports_and_asks_about_global_context(workspace, project):
     out = " ".join(run(project, "configure").stdout.split())
     assert "- Global context: no `global_context` setting" in out
     assert "Should `prompt` also list knowledge folders that are kept outside" in out
-    assert "and `okf/*-usage` matches the same inside this repository" in out
+    assert "`../*/context-db/*-project/*-usage` matches the usage folder of every repository" in out
+    assert "also offer to mount that folder" in out and "Do not mount its project folder" in out
 
 
 def test_global_context_finds_usage_folders_inside_this_repository_and_next_to_it(workspace):
@@ -998,7 +1014,7 @@ def test_global_context_finds_usage_folders_inside_this_repository_and_next_to_i
         "- **Global folder** `okf/vendored-usage/`: A copy kept in this repository",
         "- **Global folder** `../ledger/okf/ledger-usage/`: How to call the ledger",
     ]
-    assert "kept outside\n`context-db/`, most often other projects' usage folders" in out
+    assert "lists knowledge folders that are kept outside `context-db/`" in " ".join(out.split())
 
 
 # ── update ───────────────────────────────────────────────────────────────────
@@ -1056,6 +1072,9 @@ def test_update_commit_and_push(project):
     assert "Do not push." in commit
     assert commit.rstrip().endswith("note this")
     assert "Then push the current branch" in run(project, "update", "--push").stdout
+    assert "# Commit" not in run(project, "update").stdout  # neither flag: no commit is asked for
+    summary = flat(context_db.COMMAND_SUMMARIES["update"])
+    assert "Optional: --commit also commits, and --push commits and pushes." in summary
 
 
 def test_on_file_is_inlined_without_comments_or_frontmatter(project):
@@ -1195,7 +1214,7 @@ def folder_lines(out):
 
 def test_update_usage_writes_the_usage_folder_and_keeps_the_gate_first(project):
     out = run(project, "update", "--usage", "callers must send a key").stdout
-    assert out.startswith("# Context-db Update Usage\n\nA usage folder is for agents working in")
+    assert out.startswith("# Context-db Update Usage\n\nA usage folder holds usage knowledge: the")
     marks = (
         "This project keeps its usage notes here: `context-db/demo-project/demo-usage/`.",
         "tell the user there is nothing to change and stop",
@@ -1210,9 +1229,9 @@ def test_update_usage_writes_the_usage_folder_and_keeps_the_gate_first(project):
     order = [out.index(mark) for mark in marks]
     assert order == sorted(order)
     flat_out = " ".join(out.split())
-    assert "the bare minimum such an agent needs to know to use this project" in flat_out
+    assert "the bare minimum that an agent working in another project needs to know" in flat_out
     assert "Never reprint an API, a schema, a list of commands or flags" in flat_out
-    assert "Inside knowledge stays out too" in flat_out
+    assert "Project knowledge stays out too" in flat_out
     assert "which `/context-db update` writes" in flat_out
     assert "starting with its descriptor, which Folders names" in flat_out
     assert "context-db.py toc <folder>` first, to see what is already documented" in flat_out
@@ -1257,8 +1276,8 @@ def test_the_usage_folder_is_listed_once_it_exists(project):
     listing = toc(project)
     assert "* [demo-usage](context-db/demo-project/demo-usage/) - How to call demo" in listing
     assert run(project, "toc", "--check").returncode == 0
-    assert "A usage folder, if Folders lists one, is this project's too" in " ".join(
-        run(project, "prompt", "x").stdout.split()
+    assert "This project's own usage folder, if Folders lists one, is what it tells others" in (
+        " ".join(run(project, "prompt", "x").stdout.split())
     )
 
 

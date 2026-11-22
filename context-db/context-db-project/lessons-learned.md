@@ -68,9 +68,9 @@ adding a step, ask what a reader with no context would have to guess.
 
 ## What the script prints must agree with the core texts
 
-`navigate.md` tells the agent that context-db has no index files to read. A
-folder line that said "its index lists ..." made a fresh agent stop and ask
-which index was meant (2026-11-19). The line now says what the folder holds.
+`navigate.md` told the agent at the time that context-db has no index files to
+read. A folder line that said "its index lists ..." made a fresh agent stop and
+ask which index was meant (2026-11-19). The line now says what the folder holds.
 Before adding wording to the script, read it next to `navigate.md` and
 `not-a-mirror.md`, which are sent with it.
 
@@ -78,11 +78,9 @@ The same trial showed that a section which introduces a new kind of folder must
 name the command for it. "Look into one the way How to Navigate Context-db
 says" left the agent guessing whether `toc` works outside `context-db/`.
 
-Still open from those trials, all in `SKILL.md`: it tells the agent to read the
-`python:` line from a settings file and also to use `toc` whenever it looks
-into `context-db/`, and both agents noticed the clash. It does not say what to
-pass when the user types only flags, or whether a multi-line instruction keeps
-its line breaks.
+Still open from those trials, in `SKILL.md`: it does not say what to pass when
+the user types only flags, or whether a multi-line instruction keeps its line
+breaks.
 
 ## Configure is a menu, not a form
 
@@ -90,7 +88,8 @@ The owner wants `/context-db configure` to feel like a guided helper: one
 question at a time, as a menu with a recommended option, using the agent's
 question tool where it has one. Add a new setting as a question in
 `configure.md` and a setting flag on `configure`, never as something to edit by
-hand.
+hand. `settings_files` is the one exception; see
+[configuration-folder.md](./design-decisions/configuration-folder.md).
 
 The owner's model of the product, stated on 2026-11-11: context-db supplies the
 instructions that keep an agent grounded, the `ON_*.md` files are how a user
@@ -120,12 +119,21 @@ separating sections of a composed prompt, and headers need no closing tag. Each
 prompt file opens with one H1; the script adds H1 sections for dynamic content
 (`# Folders`, `# Work In Progress`, `# Git State`, `# User Instruction`).
 
-## Name the project folder on writes, not on reads
+## On reads, the project folder first and one test for every folder
 
-Write commands say exactly where to write, because writes need direction. The
-`prompt` output lists every folder with equal standing apart from the label,
-because reads need recall: narrowing attention to the project folder biases the
-agent away from standards that apply.
+Write commands say exactly where to write, because writes need direction. On
+`prompt` the project folder is named as the place to start, which the owner
+decided on 2026-11-22; see
+[usage-folders.md](./design-decisions/usage-folders.md). Keep the other half as
+it was: the test for opening a note is the same for every folder. Wording that
+narrowed attention to the project folder once biased the agent away from
+standards that apply.
+
+## Measure the whole message, not the file
+
+The first draft of the keep-small rule made every writing command's message a
+quarter longer, which defeats a rule about writing less. After a prompt change,
+run each command and count the lines it prints, before and after.
 
 ## Retire a specialized primitive once a flexible one subsumes it
 
