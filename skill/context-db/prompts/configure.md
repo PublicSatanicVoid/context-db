@@ -121,21 +121,29 @@ Make each change as soon as the user answers, and show them the new text.
    - Only on maintain: "Do not split or reorganize files, even long ones. If a
      file you edited is now over about 150 lines, say so in one line and
      suggest `/context-db maintain`."
-9. **Other repositories.** "Does this project rely on other repositories?"
-   Options: no, or yes. For each one, get where it is (a path on disk or a URL)
-   and one line on what this project uses it for. Record them in `ON_PROMPT.md`
-   under the line "Related repositories:", one per line: name, location, what it
-   is for. Replace that list if it is already there. Do not clone anything. If a
-   repository is on disk and keeps a usage folder, which is what it writes for
-   the agents of projects that use it, also offer to mount that folder: a
-   symlink at the top level of `{cdb}/`, named after the folder it points to.
-   The folder is `context-db/<its name>-project/<its name>-usage/` there,
-   unless the `usage_folders` line in its
-   `context-db/configuration/settings.md` names other places. If it keeps
-   several, offer the one whose description fits what this project uses it
-   for. Do not mount its project folder, which is for agents working on that
-   project. A mount that is only for this user also goes in `.gitignore`.
-10. **Global context.** Global context is knowledge kept outside `{cdb}/`,
+9. **Cleaning up.** "When it is not obvious how much of the knowledge base
+   to clean up after a task, should the agent ask you?" Options: ask
+   (recommended; it does this with no rule); clean up without asking;
+   delete nothing without asking. Remove any sentence about this from
+   `ON_UPDATE.md`, and for the second or third answer add its sentence:
+   - Without asking: "Clean up without asking: fix or delete every note you
+     judge wrong or no longer needed, and list what you deleted."
+   - Nothing without asking: "Delete no note without asking the user first."
+10. **Other repositories.** "Does this project rely on other repositories?"
+    Options: no, or yes. For each one, get where it is (a path on disk or a URL)
+    and one line on what this project uses it for. Record them in `ON_PROMPT.md`
+    under the line "Related repositories:", one per line: name, location, what it
+    is for. Replace that list if it is already there. Do not clone anything. If a
+    repository is on disk and keeps a usage folder, which is what it writes for
+    the agents of projects that use it, also offer to mount that folder: a
+    symlink at the top level of `{cdb}/`, named after the folder it points to.
+    The folder is `context-db/<its name>-project/<its name>-usage/` there,
+    unless the `usage_folders` line in its
+    `context-db/configuration/settings.md` names other places. If it keeps
+    several, offer the one whose description fits what this project uses it
+    for. Do not mount its project folder, which is for agents working on that
+    project. A mount that is only for this user also goes in `.gitignore`.
+11. **Global context.** Global context is knowledge kept outside `{cdb}/`,
     most often the usage folders of other projects. `prompt` finds those
     folders with glob patterns and lists them after this project's own;
     nothing is mounted or copied. Detected State says whether a pattern is set
@@ -157,7 +165,7 @@ Make each change as soon as the user answers, and show them the new text.
     For patterns that fit only this user's machine, pass
     `--local 'global_context=<patterns, separated by spaces>'` in place of
     `--global-context`.
-11. **Usage folders.** A usage folder holds usage knowledge: what agents in
+12. **Usage folders.** A usage folder holds usage knowledge: what agents in
     other projects need to know to use this one. `/context-db update --usage`
     writes it, and those projects mount it or find it as global context.
     Detected State says where this project's are kept and whether they exist
@@ -177,7 +185,7 @@ Make each change as soon as the user answers, and show them the new text.
     Nothing is created now: a folder appears the first time
     `/context-db update --usage` has something to write in it. If a usage
     folder already exists in the old place, move it to the new one.
-12. **Anything else.** Tell the user in a sentence per file what the ON files
+13. **Anything else.** Tell the user in a sentence per file what the ON files
     make the agent do now. Then ask: "Is there anything else the agent should
     always do?" Options: no (recommended); yes, for `prompt` (while it works),
     `update` (what gets written down, how commits are made), `wip` (how work in

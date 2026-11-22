@@ -44,7 +44,7 @@ home.
 | How to use your project, for people | Your README and your docs | You |
 | Project knowledge: what an agent needs in order to work on your project, and cannot read from any of those | The [project folder](#the-project-folder) | `update` and `maintain` |
 | Usage knowledge: what an agent in another project needs in order to use yours, and your docs do not say | A [usage folder](#usage-folders) | `update --usage` and `maintain --usage` |
-| Where the work in progress stands | The [`wip/` folder](#the-wip-folder) | `wip` |
+| Where the work in progress stands | The [`wip/` folder](#the-wip-folder) | `wip`, and `update` for the plan a session worked from |
 | Rules the agent must see every time a command runs | The [ON files](commands.md#the-rule-files-control-how-the-agent-behaves) | You, or `configure` |
 | What another project knows, or your whole team | [Background folders](#background-folders) and [global context](#global-context) | Their owners. Your agent only reads them. |
 
@@ -540,8 +540,9 @@ branch: feature/refunds
 ---
 ```
 
-The [`wip` command](commands.md) keeps this folder up to date, and the checker
-warns about a plan that `wip.md` does not list.
+The [`wip` command](commands.md#context-db-wip) writes the plans, `update`
+keeps the one a session worked from up to date, and the checker warns about a
+plan that `wip.md` does not list.
 
 ## What the checker looks for
 

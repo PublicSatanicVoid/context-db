@@ -98,6 +98,26 @@ projects, `prompt` lists those folders as well. When the setting
 Add an endpoint for refunds. It posts to the ledger service.
 ```
 
+### Picking up work in progress
+
+When the task continues work that has a plan in [`wip/`](#context-db-wip), add
+`--wip`:
+
+```text
+/context-db prompt --wip
+
+Finish the refund endpoint.
+```
+
+The agent then reads the plans for that work in full before anything else, and
+goes on from where they say the work stands. With nothing after `--wip`, it
+reads the plans, tells you where the work stands and what comes next, and
+waits for you to say what to do.
+
+Without `--wip`, the agent still sees the list, and opens a plan only when it
+bears on the task. When the session ends, plain `update` brings the plan up to
+date.
+
 :::{dropdown} The text the agent receives
 :color: secondary
 
@@ -127,20 +147,23 @@ What the agent does:
    the project folder, or creates one.
 3. If a note it read during the session turned out to be wrong, or only
    repeated the code, fixes or deletes that note.
-4. Leaves everything else alone. If it came across other notes that look out
+4. If the session worked from a plan in `wip/`, brings that plan up to date,
+   and deletes it once the work is finished.
+5. Leaves everything else alone. If it came across other notes that look out
    of date or no longer needed, it names them and asks you whether to clean
-   them up.
-5. Reads its change once more and cuts every line the next agent would not
+   them up. When it is not obvious how much to clean up, it asks you how far
+   to go.
+6. Reads its change once more and cuts every line the next agent would not
    miss.
-6. Checks the format with `toc --check`, fixes what its change caused, and
+7. Checks the format with `toc --check`, fixes what its change caused, and
    tells you what it added, changed, and deleted.
-7. With `--commit`, commits everything that changed in the session. With
+8. With `--commit`, commits everything that changed in the session. With
    `--push`, pushes as well.
 
 When what it learned belongs somewhere else, it says so and writes no note: a
-fact about one piece of code belongs in a comment, a plan belongs in `wip/`,
-and usage knowledge, which is what other projects need, belongs in a usage
-folder.
+fact about one piece of code belongs in a comment, a new plan belongs in
+`wip/`, and usage knowledge, which is what other projects need, belongs in a
+usage folder.
 [Where each thing goes](layout.md#where-each-thing-goes) has the whole list.
 
 Typed with nothing after it, the agent looks back over the session and decides
@@ -259,11 +282,20 @@ the work lands.
 `prompt` shows the list every time it runs, so each new session starts by
 knowing what is in progress. When the list is empty, `prompt` leaves it out.
 
+Once a plan exists, the two everyday commands look after it:
+
+| When | Typed | What happens to the plan |
+| --- | --- | --- |
+| Before a session on that work | `/context-db prompt --wip` | The agent reads it in full and goes on from where it stands. |
+| After the session | `/context-db update` | The agent brings it up to date from what the session did, and deletes it once the work is finished. |
+
+The `wip` command itself is for everything else:
+
 | Typed | What the agent does |
 | --- | --- |
-| `/context-db wip` | Writes or updates the plan for the current work, and its line in `wip.md`. |
+| `/context-db wip` | Writes or updates the plan for the current work, and its line in `wip.md`. Use it to start a plan, or to save where the work stands in the middle of a session. |
 | `/context-db wip --list` | Shows what is in progress and how long each piece has been going. Changes nothing. |
-| `/context-db wip --cleanup` | Looks at git, deletes the plans for work that has been merged into the main branch, and brings the other lines up to date. Anything worth keeping for the long term is moved into the main knowledge base first. |
+| `/context-db wip --cleanup` | The thorough cleanup. Checks every plan against git, whichever session wrote it, deletes the plans for work that has been merged into the main branch, and brings the other lines up to date. Anything worth keeping for the long term is moved into the main knowledge base first. |
 | `/context-db wip --clear` | Shows you every plan, asks you to confirm, then deletes them all and empties the list. |
 
 :::{dropdown} The text the agent receives
@@ -337,6 +369,8 @@ What the agent does:
      only when you run `update`?
    - When a note gets too long, should the agent split it while it is working
      in it, or only when you run `maintain`?
+   - When it is not obvious how much to clean up after a task, should the
+     agent ask you, clean up without asking, or delete nothing without asking?
    - Which other repositories does this project rely on?
    - Should `prompt` also list knowledge folders that are kept outside
      `context-db/`, such as the usage folders of other projects?
@@ -640,7 +674,7 @@ heading shown.
 | `# Context-db Prompt` | `prompts/prompt.md` |
 | `# How to Navigate Context-db` | `prompts/navigate.md` |
 | `# Context-db Is Not a Mirror of the Code` | `prompts/not-a-mirror.md` |
-| `# Work In Progress` | The list in `wip/wip.md`. Left out when it lists nothing. |
+| `# Work In Progress` | The list in `wip/wip.md`. Left out when it lists nothing. With `--wip`, it tells the agent to start from the plans, or says that there are none. |
 | `# Folders` | The project folder, your usage folders if there are any, and each background folder, one line each with its description. |
 | `# Global Context` | Each folder outside `context-db/` that the `global_context` setting matches, one line each with its description. Left out when nothing matches, and when `use_global_context` is `false` and you did not add `--use-global-context`. |
 | `# Project Rules` | `configuration/ON_PROMPT.md` |

@@ -78,9 +78,8 @@ The same trial showed that a section which introduces a new kind of folder must
 name the command for it. "Look into one the way How to Navigate Context-db
 says" left the agent guessing whether `toc` works outside `context-db/`.
 
-Still open from those trials, in `SKILL.md`: it does not say what to pass when
-the user types only flags, or whether a multi-line instruction keeps its line
-breaks.
+Still open from those trials, in `SKILL.md`: it does not say whether a
+multi-line instruction keeps its line breaks.
 
 ## Configure is a menu, not a form
 
@@ -133,7 +132,9 @@ standards that apply.
 
 The first draft of the keep-small rule made every writing command's message a
 quarter longer, which defeats a rule about writing less. After a prompt change,
-run each command and count the lines it prints, before and after.
+run each command and count the lines it prints, before and after. The owner
+said it again on 2026-11-22: every prompt to an agent is to be "minimal,
+concise".
 
 ## Retire a specialized primitive once a flexible one subsumes it
 

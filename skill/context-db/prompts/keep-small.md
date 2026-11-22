@@ -13,5 +13,5 @@ not to add to it. Leaving it smaller is as good a result as leaving it larger.
   "update" paragraph or history. Git keeps what was there before.
 - Delete what is no longer needed: what has become false, what the project now
   says itself, what was about work that is finished or code that is gone.
-- When you cannot tell whether something is still needed, ask the user. Do not
-  keep it just in case, and do not delete it without saying so.
+- When it is not obvious how much to clean up, ask the user how far to go. Do
+  not keep a note just in case, and do not delete one without saying so.

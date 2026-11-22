@@ -106,8 +106,9 @@ neither, the agent leaves the commit to you.
   only what future agents need to know to be effective, and `maintain` clears
   out what has gone stale, so it stays small and efficient.
 - `wip` keeps a short list of the work in progress with a plan for each, so a
-  new session can pick up long work where the last one stopped. It is useful on
-  a new project, where one feature often takes many agent sessions.
+  new session can pick up long work where the last one stopped: `prompt --wip`
+  starts from the plan, and `update` brings it up to date. It is useful on a
+  new project, where one feature often takes many agent sessions.
 - Shared standards and reference material are mounted as background folders.
   The agent is told which folders are background and which is the project's
   own, and it writes only to the project's. It knows which knowledge is
@@ -156,7 +157,8 @@ files and one Python script.
 :link: commands
 :link-type: doc
 
-Before a task. Looks up what the knowledge base says about it.
+Before a task. Looks up what the knowledge base says about it. `--wip` picks up
+the work in progress.
 :::
 
 :::{grid-item-card} /context-db update

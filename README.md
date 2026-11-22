@@ -100,8 +100,9 @@ neither, the agent leaves the commit to you.
   only what future agents need to know to be effective, and `maintain` clears
   out what has gone stale, so it stays small and efficient.
 - `wip` keeps a short list of the work in progress with a plan for each, so a
-  new session can pick up long work where the last one stopped. It is useful on
-  a new project, where one feature often takes many agent sessions.
+  new session can pick up long work where the last one stopped: `prompt --wip`
+  starts from the plan, and `update` brings it up to date. It is useful on a
+  new project, where one feature often takes many agent sessions.
 - Shared standards and reference material are mounted as background folders.
   The agent is told which folders are background and which is the project's
   own, and it writes only to the project's. It knows which knowledge is
@@ -182,7 +183,7 @@ your-project/
 
 | Command | What it does |
 | --- | --- |
-| `/context-db prompt` | Before a task. Looks up what the knowledge base says about it. |
+| `/context-db prompt` | Before a task. Looks up what the knowledge base says about it. `--wip` picks up the work in progress. |
 | `/context-db update` | After a task. Writes down what the next agent would need, if anything. `--usage` writes down what other projects need to know to use this one. Optional: `--commit` also commits, and `--push` commits and pushes. |
 | `/context-db wip` | Optional, for long work. Keeps a short list of the work in progress. `--list`, `--cleanup`, `--clear`. |
 | `/context-db configure` | First, and whenever you like. Sets context-db up by asking a few questions; edit the files by hand afterwards. |

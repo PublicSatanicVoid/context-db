@@ -1,8 +1,9 @@
 # Context-db Wip Cleanup
 
-Make the record of work in progress true again: delete the plans for work that
-has landed, and bring the rest up to date. Follow the user instruction at the
-end of this output, if there is one.
+Check every plan in the record of work in progress against version control,
+not against what you remember: delete the plans for work that has landed, and
+bring the rest up to date. Follow the user instruction at the end of this
+output, if there is one.
 
 Work has landed when it is merged into `{main}`, or committed, if you are
 working on `{main}` itself. Work that is finished on another branch but not yet
@@ -10,7 +11,8 @@ merged has not landed.
 
 1. Read `{wip_list}` and every plan it links to. Also look for files and
    folders in `{wip_dir}/` that the list does not mention.
-2. Compare each plan with the Git State below.
+2. Compare each plan with the Git State below, and with `git log` or
+   `git diff` where that does not settle it.
    - A plan whose work has all landed is finished: delete it and its line. If
      only some of it has landed, delete those parts. Before deleting, check
      whether it holds a decision or pitfall a future agent will still need once

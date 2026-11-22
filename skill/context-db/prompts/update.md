@@ -1,15 +1,17 @@
 # Context-db Update
 
 Decide first whether the knowledge base needs to change at all. Think back
-over this session, for two things:
+over this session, for three things:
 
 - What you learned that the next agent would get wrong, or miss, without it:
   corrections the user made, conventions, pitfalls, decisions and the reasons
   for them.
 - What the notes you read turned out to be: one that is out of date, one that
   sent you the wrong way, one that says only what the code shows.
+- Whether a plan in `{wip_dir}/` that this session worked from still says
+  where the work stands.
 
-If there is neither, {nothing_to_add}.
+If there is none of these, {nothing_to_add}.
 
 Most sessions change nothing. That is the normal outcome, not a failure.
 
@@ -41,8 +43,9 @@ Run `{toc_cmd} {project_dir}` first, to see what is already documented.
 
 Some things have a home of their own, and do not go in the main tree:
 
-- Plans and the status of ongoing work: `{wip_dir}/`, which `/context-db wip`
-  manages, if the project records them.
+- Plans and the status of ongoing work: `{wip_dir}/`. Bring a plan this
+  session worked from, and its line in `wip.md`, up to date, and delete both
+  once the work is finished. `/context-db wip` handles the other plans.
 - Usage knowledge, which is what agents in other projects need to know to use
   this one: a usage folder ({usage_list}), which `/context-db update --usage`
   writes. Say so in one line and suggest that command.

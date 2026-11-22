@@ -6,7 +6,8 @@ Commands the user invokes. Each prints instructions that the calling agent
 follows; COMMAND_SUMMARIES below is the one-line description of each, shown by
 --help and repeated word for word in the README and on the docs home page.
 
-  prompt "<task>"         Before a task (--use-global-context).
+  prompt "<task>"         Before a task (--wip to pick up the work in progress;
+                          --use-global-context).
   update ["<learning>"]   After a task (--commit / --push to commit too;
                           --usage to write the usage folders instead).
   wip ["<instruction>"]   Optional (--list, --cleanup, --clear).
@@ -128,7 +129,8 @@ SKILL_DIR = os.path.dirname(os.path.abspath(__file__))
 
 COMMAND_SUMMARIES = {
     "prompt": """
-Before a task. Looks up what the knowledge base says about it.
+Before a task. Looks up what the knowledge base says about it. --wip picks up
+the work in progress.
 """,
     "update": """
 After a task. Writes down what the next agent would need, if anything. --usage
@@ -213,6 +215,11 @@ NO_INSTRUCTION = """
 No instruction was given. Ask the user what they want to work on.
 """
 
+NO_WIP_TO_PICK_UP = """
+`{wip_list}` lists no work in progress, so there is none to pick up. Tell the
+user in one line.
+"""
+
 PROJECT_FOLDER_MISSING = """
 - **Project folder** `{folder}/` does not exist. Tell the user to run `/context-db configure`.
 """
@@ -270,6 +277,20 @@ WIP_FOR_PROMPT = """
 The work happening right now, from `{wip_list}`. Its links are relative to
 `{wip_dir}/`. Open the plans that bear on the instruction{on_branch} before
 anything else.
+"""
+
+WIP_TO_PICK_UP = """
+This task picks up work in progress, listed here from `{wip_list}`. Its links
+are relative to `{wip_dir}/`. Before anything else, read in full the plans it
+is about{on_branch}, and go on from where they say the work stands.
+"""
+
+WIP_TO_REPORT = """
+The user is picking up work in progress and has given no task yet. It is
+listed here from `{wip_list}`, and its links are relative to `{wip_dir}/`.
+Read the plans in full{on_branch}, tell the user where the work stands and
+what comes next, and wait. Their answer is the instruction: look into the
+folders for it then.
 """
 
 WIP_LISTED = """
@@ -1476,11 +1497,22 @@ def cmd_prompt(args):
     cdb = context_db_dir()
     config = require_config(cdb, args)
     instruction = instruction_of(args)
-    if not instruction:
-        emit(args, [text(NO_INSTRUCTION)])
+    picking_up = args.wip and bool(wip_list(cdb, config))
+    if not instruction and not picking_up:
+        none = text(NO_WIP_TO_PICK_UP, wip_list=wip_list_path(cdb, config)) if args.wip else ""
+        emit(args, [none, text(NO_INSTRUCTION)])
         return
     branch = current_branch()
     on_branch = f" (the current branch is `{branch}`)" if branch else ""
+    if not args.wip:
+        wip = wip_section(cdb, config, WIP_FOR_PROMPT, show_empty=False, on_branch=on_branch)
+    elif picking_up:
+        intro = WIP_TO_PICK_UP if instruction else WIP_TO_REPORT
+        wip = wip_section(cdb, config, intro, show_empty=False, on_branch=on_branch)
+    else:
+        wip = "# Work In Progress\n\n" + text(
+            NO_WIP_TO_PICK_UP, wip_list=wip_list_path(cdb, config)
+        )
     # The flag asks for the global folders outright, so it also says when there are none.
     asked = args.use_global_context
     global_context = (
@@ -1494,7 +1526,7 @@ def cmd_prompt(args):
             load_prompt("prompt", cdb=cdb, project_dir=project_dir(cdb, config)),
             navigate_section(config),
             load_prompt("not-a-mirror"),
-            wip_section(cdb, config, WIP_FOR_PROMPT, show_empty=False, on_branch=on_branch),
+            wip,
             folders_section(cdb, config),
             global_context,
             on_file_text(cdb, "prompt"),
@@ -2039,6 +2071,12 @@ def build_parser():
 
     p = command("prompt")
     p.add_argument(
+        "--wip",
+        action="store_true",
+        help="Pick up the work in progress: start from its plans. With no task, "
+        "say where the work stands",
+    )
+    p.add_argument(
         "--use-global-context",
         action="store_true",
         help="Also list the folders the global_context setting matches, "
@@ -2064,7 +2102,9 @@ def build_parser():
         "--list", action="store_true", help="Show what is in progress; change nothing"
     )
     modes.add_argument(
-        "--cleanup", action="store_true", help="Delete the plans for work that has landed"
+        "--cleanup",
+        action="store_true",
+        help="Check every plan against git and delete those whose work has landed",
     )
     modes.add_argument("--clear", action="store_true", help="Delete every plan, after asking")
 

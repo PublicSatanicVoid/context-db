@@ -125,7 +125,9 @@ After it:
 That is the whole loop: `prompt`, work for as many turns as it takes, `update
 --push`. `--push` is optional: `--commit` commits and does not push, and with
 neither the commit is left to you. For work that runs over several sessions,
-you can also keep a record with `/context-db wip`; it is optional. Run
+you can also keep a plan with `/context-db wip`; it is optional. `prompt
+--wip` then starts the next session from the plan, and `update` keeps it up to
+date. Run
 `/context-db maintain` now and then to cut the knowledge base back to what is
 still needed. [Commands](commands.md) explains all five.
 

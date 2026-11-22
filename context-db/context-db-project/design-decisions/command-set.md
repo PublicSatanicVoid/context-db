@@ -1,12 +1,10 @@
 ---
 type: Decision
 description:
-  The five user commands and their order (prompt, update, wip, configure,
-  maintain), why maintain is separate from update, why init folded into
-  configure, why help and the toc helper are not listed, why the flag that shows
-  a command's message is called --show-context and not --dry-run, and how
-  --help, the README, and the docs home page stay word-for-word in sync. Owner
-  decisions of 2026-11-11 and 2026-11-19.
+  The five user commands and their order, and why — maintain apart from update,
+  prompt --wip and no update --wip, configure in place of init, --show-context
+  and not --dry-run, and one source for the one-line summaries. Owner
+  decisions of November 2026.
 ---
 
 # The command set
@@ -29,6 +27,27 @@ knowledge base" made `update` do work when there was nothing to do. So:
   Its main job is enforcing the not-a-mirror rule (below), and its second the
   keep-small rule. `--use-git-diff` adds each note's age against the commits
   made to the project since.
+
+## prompt --wip, and no update --wip
+
+The owner asked for both on 2026-11-22 and dropped the second the same day:
+keeping a plan current is something plain `update` does when the session
+worked from that plan, and `update` must be very brief about it. The split is
+one of scope:
+
+- `update` brings the plan the session worked from up to date, from what the
+  agent remembers of the session, such as a ticket that was closed.
+- `wip --cleanup` is the aggressive sweep of every plan, judged by version
+  control.
+
+Do not add `update --wip`, and do not fold `--cleanup` into `update`.
+
+Two parts are the implementing agent's choices. `prompt --wip` with no task
+reports where the work stands and waits. And `configure` asks how freely
+`update` cleans up: the owner said only that asking the user how far to go is
+fine and "could be a config option". The question writes a sentence into
+`ON_UPDATE.md` for an answer other than the default, so the default costs
+nothing on each run.
 
 ## configure, not init
 

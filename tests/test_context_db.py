@@ -718,6 +718,8 @@ def test_no_placeholder_is_left_unfilled(example):
     for args in (
         ("prompt", "x"),
         ("prompt", "x", "--use-global-context"),
+        ("prompt", "x", "--wip"),
+        ("prompt", "--wip"),
         ("prompt", "x", "--show-context"),
         ("update",),
         ("update", "x", "--push"),
@@ -805,6 +807,43 @@ def test_prompt_lists_folders_and_wip_then_rules_then_instruction(example):
     assert order == sorted(order)
     assert out.rstrip().endswith("add a refund endpoint")
     assert "<!--" not in out
+
+
+def test_prompt_wip_starts_from_the_plans(example):
+    plain = run(example, "prompt", "finish the refund endpoint").stdout
+    out = run(example, "prompt", "--wip", "finish the refund endpoint").stdout
+    wip = " ".join(out.split("# Work In Progress")[1].split("# Folders")[0].split())
+    assert "This task picks up work in progress" in wip
+    assert "Before anything else, read in full the plans it is about" in wip
+    assert "go on from where they say the work stands" in wip
+    assert "- [Refund endpoint](refund-endpoint.md). Started 2026-11-03" in wip
+    assert "no task yet" not in wip
+    # The flag changes that one section and nothing else.
+    assert plain.split("# Work In Progress")[0] == out.split("# Work In Progress")[0]
+    assert plain.split("# Folders")[1] == out.split("# Folders")[1]
+    assert "This task picks up" not in plain
+
+
+def test_prompt_wip_with_no_task_reports_where_the_work_stands(example):
+    out = run(example, "prompt", "--wip").stdout
+    wip = " ".join(out.split("# Work In Progress")[1].split("# Folders")[0].split())
+    assert "has given no task yet" in wip
+    assert "tell the user where the work stands and what comes next, and wait." in wip
+    assert "Their answer is the instruction: look into the folders for it then." in wip
+    assert "- [Refund endpoint](refund-endpoint.md)." in wip
+    assert "# Folders" in out and "# User Instruction" not in out
+
+
+def test_prompt_wip_says_so_when_nothing_is_in_progress(project):
+    out = " ".join(run(project, "prompt", "--wip", "x").stdout.split())
+    section = out.split("# Work In Progress")[1].split("# Folders")[0]
+    assert "lists no work in progress, so there is none to pick up" in section
+    assert "Tell the user in one line." in section
+    assert out.endswith("# User Instruction x")
+    bare = " ".join(run(project, "prompt", "--wip").stdout.split())
+    assert "there is none to pick up" in bare
+    assert bare.endswith("Ask the user what they want to work on.")
+    assert "# Folders" not in bare
 
 
 def test_prompt_leaves_out_an_empty_wip_list(project):
@@ -1054,10 +1093,29 @@ def test_update_also_fixes_what_the_session_showed_to_be_wrong(project):
     assert "Tell the user in a line or two what you added, changed, and deleted." in finish
 
 
+def test_update_brings_the_plan_the_session_worked_from_up_to_date(project):
+    """No flag for it: a session that worked from a plan leaves it true, in two short places."""
+    out = " ".join(run(project, "update").stdout.split())
+    gate = out.split("## What belongs")[0]
+    assert "for three things:" in gate
+    assert (
+        "Whether a plan in `context-db/demo-project/wip/` that this session worked from still "
+        "says where the work stands." in gate
+    )
+    assert "If there is none of these, tell the user there is nothing to change and stop" in gate
+    homes = out.split("Some things have a home of their own")[1].split("## Finish")[0]
+    assert (
+        "Bring a plan this session worked from, and its line in `wip.md`, up to date, and "
+        "delete both once the work is finished." in homes
+    )
+    assert "--wip" not in run(project, "update", "--help").stdout
+    assert run(project, "update", "--wip").returncode != 0
+
+
 def test_update_names_the_home_of_what_does_not_go_in_the_main_tree(project):
     out = " ".join(run(project, "update").stdout.split())
     homes = out.split("Some things have a home of their own")[1].split("## Finish")[0]
-    assert "`context-db/demo-project/wip/`, which `/context-db wip` manages" in homes
+    assert "`/context-db wip` handles the other plans." in homes
     assert "which `/context-db update --usage` writes" in homes
     assert "an ON file in `context-db/configuration/`" in homes and "ask the user first" in homes
     assert "it belongs in that project's own usage folder as well" in homes
@@ -1549,7 +1607,7 @@ def test_every_command_that_writes_notes_is_told_to_keep_the_knowledge_base_smal
             "- One fact, one place.",
             "- Replace, do not append.",
             "- Delete what is no longer needed",
-            "ask the user. Do not keep it just in case, and do not delete it without saying so.",
+            "When it is not obvious how much to clean up, ask the user how far to go.",
         ):
             assert line in rule, (args, line)
     for args in (("prompt", "x"), ("wip", "--list"), ("wip", "--clear"), ("configure",)):
