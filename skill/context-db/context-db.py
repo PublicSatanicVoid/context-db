@@ -513,6 +513,15 @@ def context_db_dir():
 
 
 def script_command(python):
+    """The command printed for the agent to run next.
+
+    Started as an installed `context-db` command, that command, as it was invoked: a path
+    such as ``../bin/context-db`` keeps the agent on the same installation, instead of
+    whichever ``context-db`` comes first on PATH. Otherwise, the script, run with `python`.
+    """
+    invoked = sys.argv[0]
+    if os.path.basename(invoked) == "context-db":
+        return shlex.quote(rel(invoked) if os.path.isabs(invoked) else invoked)
     script = rel(os.path.join(SKILL_DIR, "context-db.py"))
     return f"{python} {shlex.quote(script)}"
 

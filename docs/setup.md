@@ -36,7 +36,8 @@ python3 .claude/skills/context-db/context-db.py --help
 ```
 
 To have a `context-db` command instead, install the repository with
-`pip install .`. It runs the same script.
+`pip install .`. It runs the same script, and the commands it prints for the agent
+use that name, as it was invoked.
 
 ## 2. Set it up
 

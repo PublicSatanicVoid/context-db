@@ -2281,3 +2281,24 @@ def test_the_packaged_entry_point_runs_the_script_beside_it(tmp_path):
     configured = run(tmp_path, "configure", "--project", "demo", script=entry)
     assert configured.returncode == 0, configured.stdout
     assert (tmp_path / "context-db" / "configuration" / "settings.md").is_file()
+
+
+def test_installed_command_prints_itself_as_the_next_command(tmp_path):
+    """Started as `context-db`, the commands it prints name it, not python and the script."""
+    entry = SCRIPT.parent / "cli.py"
+    command = tmp_path / "bin" / "context-db"
+    write(
+        command,
+        "import importlib.util\n"
+        f"spec = importlib.util.spec_from_file_location('cli', {str(entry)!r})\n"
+        "cli = importlib.util.module_from_spec(spec)\n"
+        "spec.loader.exec_module(cli)\n"
+        "cli.main()\n",
+    )
+    project = tmp_path / "project"
+    project.mkdir()
+    assert run(project, "configure", "--project", "demo", script=command).returncode == 0
+    out = run(project, "prompt", "x", script=command).stdout
+    assert "../bin/context-db toc" in out
+    assert "context-db.py" not in out
+    assert "context-db.py toc" in run(project, "prompt", "x").stdout  # run as the script
