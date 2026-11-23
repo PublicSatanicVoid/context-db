@@ -236,8 +236,9 @@ A code repository is different. The source is the code and its comments, and
 the agent can read them whenever it wants. A page that repeats them is a second
 copy that goes out of date. So context-db takes the format and not the habit of
 writing everything down. Most sessions add nothing, and the agent is told to
-delete what is no longer needed. [Motivation](index.md#motivation) explains the
-reasoning.
+delete what is no longer needed.
+[The rule every command repeats](commands.md#the-rule-every-command-repeats)
+explains the reasoning.
 
 ## Using other tools
 

@@ -28,15 +28,25 @@ Added by the owner on 2026-11-11:
   "Get started" and "Knowledge base" were rejected; they became Setup and
   Layout.
 - There is no page for "why" and none for migrating from v0.0. The why is a
-  short section at the end of the home page and the README. Migration is the
-  owner's own task; its guide stays in this knowledge base and out of the docs.
+  short section, Motivation, at the end of the home page and the README. The
+  owner said what goes in it on 2026-11-23: "context information is needed
+  for large projects and context-db provides a system to manage large
+  context, improving on large linear AGENTS.md file that have to be in every
+  time." The reasoning about what a note costs, and why agents write too
+  much, stays on the Commands page under the rule every command repeats.
+  Migration is the owner's own task; its guide stays in this knowledge base
+  and out of the docs.
 - On the Commands page, each command's section is headed by the full command,
   such as `/context-db update`.
 - The home page and the README open with the owner's own sentence, which
   names the two kinds of knowledge (2026-11-23): "context-db helps you manage
-  project context knowledge needed for development and maintenance. In
-  addition, provides a framework for managing usage information other projects
-  can use to understand and use your project." Keep it close to those words.
+  project context knowledge needed for development and maintenance", and a
+  framework for "usage information: the knowledge other projects need to
+  consume to navigate and use your project." The lead is that sentence,
+  tightened because the owner wanted "project" used less often in it. Keep it
+  close to those words. The agent's own version ended "to understand and use
+  yours", and the owner did not like how it ended.
+  [voice.md](./voice.md) says why it reads usage information.
   The Example of `prompt` and `update --push` comes straight after it: "The
   example is useful closer to the top." Then "a bit more", under Two kinds of
   knowledge: what each kind holds, how a project reads another project's

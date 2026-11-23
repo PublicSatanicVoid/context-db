@@ -7,8 +7,8 @@ html_theme.sidebar_secondary.remove: true
 :::{div} lead
 A set of skills for coding agents. context-db helps you manage the project
 knowledge needed for development and maintenance, kept as short Markdown notes
-in your repo. It also provides a framework for managing usage knowledge: the
-information other projects need to understand and use yours.
+in your repo. It also provides a framework for managing usage information: the
+knowledge others consume to navigate and use your project.
 :::
 
 :::{div} okf-line
@@ -33,9 +33,9 @@ It looks like it is in the new receipts database code.
 Can you investigate and propose a fix?
 ```
 
-The agent lists the knowledge base, opens the notes on the database schema and the plan
-for the receipts work, and skips everything else. Then it finds the cause and
-proposes a fix.
+The agent lists the knowledge base, opens the notes on the database schema and
+the plan for the receipts work, and skips everything else. Then it finds the
+cause and proposes a fix.
 
 When the work is done:
 
@@ -52,19 +52,19 @@ neither, the agent leaves the commit to you.
 ## Two kinds of knowledge
 
 Project knowledge is internal: the decisions and their reasons, the
-conventions, the pitfalls, the plans. It drives the work on your project from
-day to day, and nobody outside the project needs it.
+conventions, the pitfalls, the plans. It drives the work from day to day, and
+nobody outside the project needs it.
 
-Usage knowledge is external, and optional: where to start, the rules for
-calling your project, the mistakes its users make. It is to agents in other
-projects what your docs are to people.
+Usage knowledge is external, and optional: where to start, the rules a caller
+must follow, the mistakes users make. It is to agents in other projects what
+your docs are to people.
 
 The two work together, because both are folders of short notes in the same
 format. A project that uses yours mounts your
 [usage folder](layout.md#usage-folders),
-and its agent reads those notes the same way it reads its own. That project's
-own knowledge still comes first. Its agent looks into yours when a task
-involves your project, before it reads your code.
+and its agent reads those notes the same way it reads its own. Its own
+knowledge still comes first. It looks into yours when a task involves your
+project, before it reads your code.
 
 ## Benefits
 
@@ -162,11 +162,11 @@ On any command
 ```
 
 Each command is a starting point. It opens the conversation with the
-instructions you would otherwise type yourself every time, and that is all
-context-db saves you: saying the same things over and over. `prompt`,
-`update`, and `maintain` cover the whole knowledge base, and no flag narrows
-them. To narrow one, or to change how it works, say so in plain words on the
-line after it, or at any point later in the conversation:
+instructions you would otherwise type yourself every time. That is all
+context-db does: it saves you from saying the same things over and over.
+`prompt`, `update`, and `maintain` cover the whole knowledge base, and no flag
+narrows them. To narrow one, or to change how it works, say so in plain words
+on the line after it, or at any point later in the conversation:
 
 ```text
 /context-db update
@@ -234,13 +234,12 @@ Nothing is loaded when a session starts. The agent reads the knowledge base when
 you run one of these commands. After `/context-db prompt` it may also add to it
 as it works; `/context-db configure` asks whether you want that.
 
-Each command gives the agent a set of instructions, so that you do not have to
-type them every time. You add your own rules in a few plain Markdown files in
-`context-db/configuration/` and edit them by hand. `ON_PROMPT.md` holds the
-project's rules for `prompt`, shared with everyone. `ON_PROMPT.local.md` holds
-rules that are only yours, and is gitignored. The other commands have the same
-pair. `/context-db configure` is a helper that writes a first version of them
-by asking you a few questions.
+You add your own rules to a command's instructions in a few plain Markdown
+files in `context-db/configuration/`, and edit them by hand. `ON_PROMPT.md`
+holds the project's rules for `prompt`, shared with everyone.
+`ON_PROMPT.local.md` holds rules that are only yours, and is gitignored. The
+other commands have the same pair. `/context-db configure` is a helper that
+writes a first version of them by asking you a few questions.
 
 ## What the knowledge base looks like
 
@@ -304,78 +303,24 @@ as they are now:
 
 ## Motivation
 
-On a large project that runs for months, every agent session starts knowing
-nothing. It has to rediscover the conventions, the decisions already made and
-why, the mistakes from last time, and where the current work stands.
-context-db is an explicit memory for that: a folder of short notes in your
-repository that you and the agent keep up as the project goes, and that the
-agent reads when you ask it to.
+An agent working on a large project needs context that the code does not give
+it, and context-db provides a system for managing that context as it grows. It
+is a hierarchy of short notes in your repository, and the agent reads only the
+ones that match the task, when you ask it to.
+
+That improves on one large `AGENTS.md` or `CLAUDE.md` file, which is linear
+and is loaded in full into every session, so most of what the agent reads has
+nothing to do with the task.
 
 The idea builds on Andrej Karpathy's
 [LLM wiki](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f):
 have the LLM keep a wiki of what it has learned, instead of working everything
 out again each time.
-context-db uses that idea to cut down how much context has to be loaded for
-each task, which keeps the agent focused and efficient.
 
-The usual answer is a big `AGENTS.md` or `CLAUDE.md`. That file is loaded into
-every session in full, whatever the task, and as it grows the problems are well
-known. Most of it has nothing to do with the task at hand, and the part that
-matters gets lost in the rest. The agent trusts it and reads less of the code.
-Nobody notices when it goes out of date, so the agent repeats what it gets
-wrong. Rules read at the start of a long session have faded by the time the
-work they apply to comes up.
-
-A memory of this kind has a cost that is easy to miss. A note is not free once
-it is written. Every later session has to read past it, someone has to keep it
-true as the code changes, and when nobody does, it misleads. A note earns its
-place only while it prevents more mistakes than it causes, and it is worth
-less as time passes: the work it was about gets finished, and the code it
-described gets replaced.
-
-An agent does not weigh that cost by itself. It is trained to finish the task
-in front of it, and what its work costs later is not part of that task. So it
-writes too much. It adds a note for everything it learned, sums up code it has
-just read, starts a second note where one already covers the topic, and adds a
-paragraph where a correction was needed. It does not delete. A knowledge base
-kept that way grows until it is in the way. The long view has to come from
-somewhere else, and context-db puts it in the instructions the agent gets each
-time it reads or writes.
-
-context-db keeps one rule above all, and repeats it to the agent on every
-command: the knowledge base is not a mirror of the code. Anything an agent can
-learn by reading the code, its comments, and your docs stays there. A note that
-copies it is a second version, and it drifts out of date every time the code
-changes, while the next agent goes on trusting it. So the knowledge base keeps
-only what the code cannot say: why a decision was made, the conventions and
-pitfalls the code does not show, rules that come from outside, and the plan for
-the work in progress. `update` follows that rule when it writes. `maintain`
-goes looking for notes that break it.
-
-A second rule goes with every command that writes: keep it small. Write the
-least that does the job. Keep each fact in one place. Rewrite what has changed,
-and do not add to it. Delete what is no longer needed. Ask when it is not clear
-whether something is still needed. The agent is told that leaving the knowledge
-base smaller is as good a result as leaving it larger.
-
-context-db hands the agent small pieces of text at set points in the work
-instead of one big file:
-
-- `prompt`, right before a task: how to list the knowledge base, the plans for
-  the work in progress, and your rules. The agent opens only the notes that
-  match the task.
-- `update`, after a task: whether anything needs to change at all, what belongs
-  in the knowledge base and what does not, and which notes the session showed
-  to be wrong. Most of the time nothing changes.
-- `maintain`, rarely, as a spring cleaning: how to find notes that repeat the
-  code, have drifted from it, or are no longer needed, and remove them.
-- `wip`, during long work: how to keep a short record of where things stand.
-
-The rest stays out of the agent's context. Where a note and the code disagree,
-the agent is told to trust the code and tell you.
-
-Keep it small. If deleting a note would not make the agent do anything wrong,
-delete it.
+The point is to give the agent the right amount of context, so every command
+that writes tells it to leave out what the code already says, and to delete
+what is no longer needed.
+[The rule every command repeats](commands.md#the-rule-every-command-repeats) has the exact text.
 
 ```{toctree}
 :hidden:

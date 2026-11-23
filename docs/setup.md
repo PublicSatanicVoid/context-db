@@ -103,7 +103,6 @@ It tells the agent that the knowledge base exists, and that it should not read
 it unless you run a command. `configure` offers to add it for you. This
 matters. An agent that loads the whole knowledge base at the start of every
 session has less attention left for your task.
-[Motivation](index.md#motivation) explains why.
 
 ## 5. Use it
 

@@ -593,7 +593,7 @@ def test_readme_and_docs_home_open_alike_and_briefly():
         two_kinds = rest.split("## Two kinds of knowledge")[1]
         said = flat(intro)
         assert "A set of skills for coding agents. context-db helps you manage" in said, path
-        assert "It also provides a framework for managing usage knowledge" in said, path
+        assert "It also provides a framework for managing usage information" in said, path
         assert "|" not in two_kinds, path  # the owner found a table here "weird"
         assert len(two_kinds.split()) < 160, path  # and twice this much "too detailed"
         assert "own knowledge still comes first" in flat(two_kinds), path

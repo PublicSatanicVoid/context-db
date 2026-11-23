@@ -21,6 +21,10 @@ detailed, the table was weird. Too explicit. We can be more simple." And, when
 the agent set about cutting it to a stub: "the info you had was good, it was
 just too detailed and too soon in the page."
 
+The same day, of a Motivation section that opened with what goes wrong on a
+large project and ran to ten paragraphs: "less vacuum salesman throwing dirt
+on the carpet and more about just what it is."
+
 ## What that means in practice
 
 This list is an interpretation of that feedback, drawn from what was removed in
@@ -39,6 +43,15 @@ the v0.1 rewrite of the docs.
 - On the home page and the README, give an idea a few plain sentences. Keep
   the substance, cut the detail, and link to the page that has it. Do not lay
   out every property of a thing in a table.
+- Say what context-db is and does. Do not build up a problem first in order
+  to sell the answer to it.
+- Do not repeat a noun through a sentence or a short paragraph. The owner
+  asked for one "without the word project used so often".
+
+A correction to one passage applies to the whole page. On 2026-11-23, after
+pointing at three passages one at a time, the owner said: "I want you to fix
+everything you find to make it complete." Look for the same fault in the other
+sections and fix it in the same pass.
 
 ## Showing a command
 
@@ -85,6 +98,10 @@ names of the folders and the setting, so nothing had to be renamed,
 and "external" also reads as knowledge that comes from outside, which is what a
 background folder is. "Internal" and "external" may explain the two once, as
 the README does.
+
+The lead sentence of the home page and the README is the one exception: it
+says "usage information: the knowledge". The owner chose that on 2026-11-23
+over the agent's "usage knowledge: the information". Leave it.
 
 "Bundle" and "concept" are OKF's words. Use them only on the OKF page and when
 explaining how context-db maps onto OKF. The same vocabulary applies to the
