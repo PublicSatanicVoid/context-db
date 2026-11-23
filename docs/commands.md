@@ -18,6 +18,49 @@ Anywhere else, run the script:
 python3 .claude/skills/context-db/context-db.py <command>
 ```
 
+## A command is a starting point
+
+A command opens a conversation with the instructions you would otherwise type
+yourself, every time: where the knowledge base is, how to read it, what
+belongs in it, and what to leave out. That is all context-db does. It saves
+you from saying the same things again whenever you want an agent to read or
+write what your project knows.
+
+So each command is a common default, and the rest is yours to say. `prompt`,
+`update`, and `maintain` cover the whole knowledge base: your project
+knowledge, the plans for work in progress, and your usage folders. No flag
+narrows that. When you want something narrower, or something different, say
+so in plain words, on the line after the command:
+
+```text
+/context-db update
+
+Only the usage folder. The refund endpoint now needs an idempotency key.
+```
+
+```text
+/context-db maintain
+
+Leave the plans alone this time, and do not read the git history.
+```
+
+You can also say it later. A command only starts the conversation, and the
+agent keeps listening after it: tell it to look somewhere else, to go
+further, or to stop.
+
+| Command | What it does unless you say otherwise | Things you might say |
+| --- | --- | --- |
+| `prompt` | Reads what bears on the task: the plans, your project knowledge, and the usage knowledge of any project the task involves. | "Carry on with the refund endpoint." "Ignore the plans, this is unrelated." |
+| `update` | Works from what the agent remembers of this session. Writes your project knowledge, the plan the session worked from, and your usage folders if you have any. | "Also read `git diff main`. I changed the retry code by hand." "Only the usage folder." |
+| `maintain` | Goes through the whole knowledge base, and compares it with the code and the git history. | "Only `data-model/`." "Do not read the git history." |
+
+`update` and `maintain` differ in how far they look. `update` records what one
+session learned, from what the agent remembers of it, and reads no git
+history. `maintain` is a spring cleaning: it takes a broad view of the whole
+knowledge base and compares it with the project as it is now, using the git
+history to see what has moved. Run `update` after most sessions, and
+`maintain` rarely.
+
 ## The rule every command repeats
 
 The knowledge base is not a mirror of the code. Anything an agent can learn by
@@ -89,34 +132,17 @@ what the agent sees.
 
 If your settings point to [global context](layout.md#global-context), which is
 knowledge kept outside `context-db/`, such as the usage folders of other
-projects, `prompt` lists those folders as well. When the setting
-`use_global_context` is `false`, it lists them only when you ask:
+projects, `prompt` lists those folders as well.
+
+To carry on with work that has a [plan](#context-db-wip), name the work. The
+agent sees the list of plans on every `prompt`, and reads the plan for that
+work before anything else:
 
 ```text
-/context-db prompt --use-global-context
+/context-db prompt
 
-Add an endpoint for refunds. It posts to the ledger service.
+Carry on with the refund endpoint.
 ```
-
-### Picking up work in progress
-
-When the task continues work that has a plan in [`wip/`](#context-db-wip), add
-`--wip`:
-
-```text
-/context-db prompt --wip
-
-Finish the refund endpoint.
-```
-
-The agent then reads the plans for that work in full before anything else, and
-goes on from where they say the work stands. With nothing after `--wip`, it
-reads the plans, tells you where the work stands and what comes next, and
-waits for you to say what to do.
-
-Without `--wip`, the agent still sees the list, and opens a plan only when it
-bears on the task. When the session ends, plain `update` brings the plan up to
-date.
 
 :::{dropdown} The text the agent receives
 :color: secondary
@@ -137,7 +163,10 @@ when there is any, your `ON_PROMPT.md` rules, and your instruction.
 /context-db update
 ```
 
-Use it at the end of a session.
+Use it at the end of a session. It records what that session learned, from
+what the agent remembers of it. It reads no git history and does not go
+through the rest of the knowledge base. [`maintain`](#context-db-maintain)
+does both.
 
 What the agent does:
 
@@ -149,21 +178,22 @@ What the agent does:
    repeated the code, fixes or deletes that note.
 4. If the session worked from a plan in `wip/`, brings that plan up to date,
    and deletes it once the work is finished.
-5. Leaves everything else alone. If it came across other notes that look out
+5. If you have a [usage folder](#usage-knowledge) and the session changed what
+   other projects need to know, updates that folder as well.
+6. Leaves everything else alone. If it came across other notes that look out
    of date or no longer needed, it names them and asks you whether to clean
    them up. When it is not obvious how much to clean up, it asks you how far
    to go.
-6. Reads its change once more and cuts every line the next agent would not
+7. Reads its change once more and cuts every line the next agent would not
    miss.
-7. Checks the format with `toc --check`, fixes what its change caused, and
+8. Checks the format with `toc --check`, fixes what its change caused, and
    tells you what it added, changed, and deleted.
-8. With `--commit`, commits everything that changed in the session. With
+9. With `--commit`, commits everything that changed in the session. With
    `--push`, pushes as well.
 
 When what it learned belongs somewhere else, it says so and writes no note: a
-fact about one piece of code belongs in a comment, a new plan belongs in
-`wip/`, and usage knowledge, which is what other projects need, belongs in a
-usage folder.
+fact about one piece of code belongs in a comment, and a new plan is written
+by [`wip`](#context-db-wip).
 [Where each thing goes](layout.md#where-each-thing-goes) has the whole list.
 
 Typed with nothing after it, the agent looks back over the session and decides
@@ -177,6 +207,16 @@ The retry cap of three is deliberate.
 A fourth retry caused the duplicate refunds in March.
 ```
 
+The same line is where you change how `update` works. It goes by what the
+agent remembers, so work the agent did not see is not in it. When you changed
+files by hand, or another session did, say where to look:
+
+```text
+/context-db update
+
+Also read `git diff main`. I reworked the retry code by hand.
+```
+
 `--commit` and `--push` go on the same line as the command:
 
 ```text
@@ -187,43 +227,41 @@ Both are optional, and you never have to use either. `--commit` commits
 everything the session changed and does not push. `--push` commits and pushes.
 With neither, `update` makes no commit, and you commit when and how you like.
 
-### /context-db update --usage
+### Usage knowledge
+
+`update` writes two kinds of knowledge. Project knowledge is for agents
+working on your project, and it goes in the project folder. Usage knowledge
+is for agents working in other projects that use yours, and it goes in your
+[usage folders](layout.md#usage-folders).
+
+A project that nothing else uses needs no usage folder, and `update` never
+starts one unasked. To start one, say so:
 
 ```text
-/context-db update --usage
+/context-db update
+
+Start a usage folder. Other teams call the refunds API, and they keep
+getting the idempotency key wrong.
 ```
 
-`update` writes project knowledge, for agents working on your project. With
-`--usage` it writes usage knowledge, for agents working in other projects that
-use yours. It writes your [usage folders](layout.md#usage-folders) and nothing
-else.
-
-What the agent does:
+From then on, every `update` looks after that folder as well. What the agent
+does there:
 
 1. Decides whether an agent in another project would use yours wrongly, or
-   fail to use it, without something that is not written down yet. Once the
-   folder exists, the answer is mostly no, and it stops there.
-2. The first time, creates the usage folder, with a description of your
-   project for the agents of other projects to see.
-3. Writes the bare minimum: where to start, which way in is right for which
+   fail to use it, without something that is not written down yet. Mostly the
+   answer is no.
+2. Writes the bare minimum: where to start, which way in is right for which
    job, the rules a caller must follow, and the mistakes callers make.
-4. Leaves out what your project already tells its users. It does not reprint
+3. Leaves out what your project already tells its users. It does not reprint
    your API, your flags, or your docs. It says where they are.
-5. Leaves out project knowledge, such as why the project is built the way it
-   is. That belongs in the project folder, where `update` puts it.
-6. Fixes what the session made untrue, such as a rule for callers that has
+4. Leaves out project knowledge, such as why the project is built the way it
+   is. That stays in the project folder.
+5. Fixes what the session made untrue, such as a rule for callers that has
    changed.
-7. Reads its change once more, cuts every line an agent in another project
-   would not miss, and checks the format with `toc --check`.
 
-With [more than one usage folder](layout.md#more-than-one), it puts each note
-in the folder whose readers need it. It never starts a usage folder that your
-settings do not name.
-
-To say what should be recorded, write it on a new line, as with `update`. The
-agent then records that and does not go looking for more. Project knowledge in
-what you wrote is left out, and the agent tells you to run `update` for it.
-`--commit` and `--push` work with it as well.
+With [more than one usage folder](layout.md#more-than-one), the agent puts
+each note in the folder whose readers need it, and never starts a usage
+folder that your settings do not name.
 
 :::{dropdown} The text the agent receives
 :color: secondary
@@ -232,15 +270,15 @@ what you wrote is left out, and the agent tells you to run `update` for it.
 :language: markdown
 ```
 
-With `--usage` it receives this in place of the text above:
+When you have a usage folder, this follows:
 
 ```{literalinclude} ../skill/context-db/prompts/update-usage.md
 :language: markdown
 ```
 
-Either way, the agent also receives [the rule every command
+The agent also receives [the rule every command
 repeats](#the-rule-every-command-repeats), the rule to
-[keep it small](#keep-it-small), the folder list, and the format rules:
+[keep it small](#keep-it-small), and the format rules:
 
 ```{literalinclude} ../skill/context-db/prompts/format.md
 :language: markdown
@@ -282,12 +320,13 @@ the work lands.
 `prompt` shows the list every time it runs, so each new session starts by
 knowing what is in progress. When the list is empty, `prompt` leaves it out.
 
-Once a plan exists, the two everyday commands look after it:
+Once a plan exists, the everyday commands look after it:
 
 | When | Typed | What happens to the plan |
 | --- | --- | --- |
-| Before a session on that work | `/context-db prompt --wip` | The agent reads it in full and goes on from where it stands. |
-| After the session | `/context-db update` | The agent brings it up to date from what the session did, and deletes it once the work is finished. |
+| Before a session on that work | `/context-db prompt`, with a task that names the work | The agent reads the plan before anything else, and goes on from where it stands. |
+| After the session | `/context-db update` | The agent brings the plan up to date from what the session did, and deletes it once the work is finished. |
+| Rarely | `/context-db maintain` | The agent checks every plan as part of its sweep, the way `wip --maintain` does. |
 
 The `wip` command itself is for everything else:
 
@@ -295,7 +334,7 @@ The `wip` command itself is for everything else:
 | --- | --- |
 | `/context-db wip` | Writes or updates the plan for the current work, and its line in `wip.md`. Use it to start a plan, or to save where the work stands in the middle of a session. |
 | `/context-db wip --list` | Shows what is in progress and how long each piece has been going. Changes nothing. |
-| `/context-db wip --cleanup` | The thorough cleanup. Checks every plan against git, whichever session wrote it, deletes the plans for work that has been merged into the main branch, and brings the other lines up to date. Anything worth keeping for the long term is moved into the main knowledge base first. |
+| `/context-db wip --maintain` | Checks every plan against git, whichever session wrote it. Deletes the plans for work that has been merged into the main branch, and brings the other lines up to date. Anything worth keeping for the long term is moved into the main knowledge base first. |
 | `/context-db wip --clear` | Shows you every plan, asks you to confirm, then deletes them all and empties the list. |
 
 :::{dropdown} The text the agent receives
@@ -315,9 +354,16 @@ For `--list`:
 :language: markdown
 ```
 
-For `--cleanup`, followed by the git state:
+For `--maintain`:
 
-```{literalinclude} ../skill/context-db/prompts/wip-cleanup.md
+```{literalinclude} ../skill/context-db/prompts/wip-maintain.md
+:language: markdown
+```
+
+How the plans are checked, followed by the state of git. `maintain` receives
+both as well, when there are plans:
+
+```{literalinclude} ../skill/context-db/prompts/wip-check.md
 :language: markdown
 ```
 
@@ -402,17 +448,19 @@ These are the files it writes:
 
 ```text
 /context-db maintain
+```
+
+```text
+/context-db maintain
 
 Look at data-model/. It has grown.
 ```
 
-```text
-/context-db maintain --use-git-diff
-```
-
-Run it now and then, or when a part of the knowledge base feels cluttered. With
-nothing after it, the agent looks at the whole project folder; you can name a
-folder or a topic instead.
+Run it rarely, as a spring cleaning, or when a part of the knowledge base feels
+cluttered. `update` records one session. `maintain` takes a broad view of the
+whole knowledge base and compares it with the project as it is now. With
+nothing after it, the agent goes through all of it: the project folder, the
+plans, and your usage folders. You can name a folder or a topic instead.
 
 A knowledge base only grows unless someone cuts it back. Notes are added one
 session at a time, the project moves on, and what mattered then matters less
@@ -426,78 +474,82 @@ broken.
 What the agent does:
 
 1. Checks first. If nothing needs changing, it says so and stops.
-2. Opens the code each note talks about, comments included. It deletes what the
+2. Starts with the notes the code has moved furthest past, which
+   [the git history](#it-reads-the-git-history) shows.
+3. Opens the code each note talks about, comments included. It deletes what the
    code, its comments, or your docs already say, and links to them instead.
-3. Lists facts about one piece of code that would be better as a comment next
+4. Lists facts about one piece of code that would be better as a comment next
    to it, as suggestions. It does not edit your code.
-4. Fixes what has drifted from the code.
-5. Removes what is no longer needed: notes about work that is finished, code
+5. Fixes what has drifted from the code.
+6. Removes what is no longer needed: notes about work that is finished, code
    that is gone, or a decision that was reversed. Cuts notes that say more
    than the next agent needs down to the fact and its reason.
-6. Splits files that have grown too long or that hold several topics, groups a
+7. Splits files that have grown too long or that hold several topics, groups a
    crowded folder into subfolders, merges files on the same topic, and
    rewrites vague descriptions.
-7. Asks you before deleting anything that is not plainly wrong or a plain copy
-   of the code.
-8. Fixes the links to anything it moved, and tells you what it changed and why.
-
-With `--use-git-diff`, the agent also gets the git history: every note, with
-the date it last changed, how many commits have changed the project since, and
-which files it links to have changed since. It starts with the notes the code
-has moved furthest past, reads what changed, and fixes or deletes what is now
-out of date. An old note is not wrong for being old; it changes only what the
-history and the code show.
+8. Checks the plans in `wip/`, if there are any, as
+   [`wip --maintain`](#context-db-wip) does.
+9. Goes through your [usage folders](layout.md#usage-folders), if you have
+   any, for their own reader: an agent in another project that uses yours and
+   does not read its insides. It deletes what your README, your docs, and your
+   help text already tell that reader, and moves project knowledge to the
+   project folder.
+10. Asks you before deleting anything that is not plainly wrong or a plain copy
+    of the code.
+11. Fixes the links to anything it moved, and tells you what it changed and why.
 
 `update` does not sweep. It changes the files that the session's lesson belongs
 in and the notes the session showed to be wrong, and it asks you about anything
 else it noticed, so that recording one fact never turns into a reorganization.
 
-### /context-db maintain --usage
+### It reads the git history
+
+`maintain` takes it that your project is in git, and uses git to find what has
+gone out of date. The agent is handed two things, read from git when the
+command runs:
+
+- Every note, with the date it last changed, how many commits have changed
+  the project since, and which of the files it links to have changed since.
+  The notes the code has moved furthest past come first.
+- When there are plans, the state of git: the current branch, the uncommitted
+  changes, and the commits that are not on the main branch.
+
+The agent starts at the top of that list, reads what changed, and fixes or
+deletes what is now out of date. An old note is not wrong for being old. The
+agent changes only what the history and the code show.
+
+Outside a git repository, the agent is told that there is no history, and it
+works from the files alone. To leave git out where there is one, say so:
 
 ```text
-/context-db maintain --usage
+/context-db maintain
+
+Do not read the git history. Compare the notes with the code as it is.
 ```
-
-`maintain` tidies your project knowledge and leaves your
-[usage folders](layout.md#usage-folders) alone, apart from format errors.
-With `--usage` it tidies your usage knowledge instead, and judges each note
-for its reader: an agent in another project that uses yours and does not read
-its insides.
-
-What the agent does:
-
-1. Checks first. If nothing needs changing, it says so and stops.
-2. Opens what your project tells its users: the README, the docs, the
-   definition of the API, the help text, the examples. It deletes what a note
-   repeats from them, and says where it is instead.
-3. Moves project knowledge to the project folder, or deletes it.
-4. Fixes what has drifted, and every path or URL that no longer leads anywhere.
-5. Makes each note stand alone: no links that leave the folder, and the
-   project called by its name.
-6. Splits, merges, and rewrites vague descriptions, as `maintain` does.
-
-`--use-git-diff` works with it, and lists the notes of the usage folders.
 
 :::{dropdown} The text the agent receives
 :color: secondary
 
 After this text the agent sees the rule every command repeats, the rule to
-keep it small, the git history when you ask for it, the folder list, the format
+keep it small, the git history, the folder list, how to check the plans when
+there are any, how to check the usage folders when you have any, the format
 rules, your `ON_MAINTAIN.md`, and your instruction.
 
 ```{literalinclude} ../skill/context-db/prompts/maintain.md
 :language: markdown
 ```
 
-With `--usage` it receives this in place of the text above:
+The git history comes with this text:
 
-```{literalinclude} ../skill/context-db/prompts/maintain-usage.md
+```{literalinclude} ../skill/context-db/prompts/maintain-git.md
 :language: markdown
 ```
 
-With `--use-git-diff`, the history comes with this text:
+When `wip/` holds a plan, the agent receives how the plans are checked, which
+is shown under [`wip`](#context-db-wip). When you have a usage folder, it
+receives this:
 
-```{literalinclude} ../skill/context-db/prompts/maintain-git.md
+```{literalinclude} ../skill/context-db/prompts/maintain-usage.md
 :language: markdown
 ```
 :::
@@ -576,8 +628,8 @@ python3 .claude/skills/context-db/context-db.py configure --project acme-payment
 ```
 
 Its options are `--project`, `--main-branch`, `--python`, `--usage-folder`,
-`--global-context`, `--use-global-context`, and `--local KEY=VALUE` for a
-setting that applies only to you. [Setup](setup.md#settings) describes each
+`--global-context`, and `--local KEY=VALUE` for a setting that applies only
+to you. [Setup](setup.md#settings) describes each
 setting.
 
 ## Listing and checking: toc
@@ -674,9 +726,9 @@ heading shown.
 | `# Context-db Prompt` | `prompts/prompt.md` |
 | `# How to Navigate Context-db` | `prompts/navigate.md` |
 | `# Context-db Is Not a Mirror of the Code` | `prompts/not-a-mirror.md` |
-| `# Work In Progress` | The list in `wip/wip.md`. Left out when it lists nothing. With `--wip`, it tells the agent to start from the plans, or says that there are none. |
+| `# Work In Progress` | The list in `wip/wip.md`. Left out when it lists nothing. |
 | `# Folders` | The project folder, your usage folders if there are any, and each background folder, one line each with its description. |
-| `# Global Context` | Each folder outside `context-db/` that the `global_context` setting matches, one line each with its description. Left out when nothing matches, and when `use_global_context` is `false` and you did not add `--use-global-context`. |
+| `# Global Context` | Each folder outside `context-db/` that the `global_context` setting matches, one line each with its description. Left out when nothing matches. |
 | `# Project Rules` | `configuration/ON_PROMPT.md` |
 | `# User Rules` | `configuration/ON_PROMPT.local.md`, if you have one. |
 | `# User Instruction` | What you typed. |
@@ -686,6 +738,7 @@ heading shown.
 | The agent sees | It comes from |
 | --- | --- |
 | `# Context-db Update` | `prompts/update.md` |
+| `# Usage Knowledge` | `prompts/update-usage.md`. Only when you have a usage folder. |
 | `# Context-db Is Not a Mirror of the Code` | `prompts/not-a-mirror.md` |
 | `# Keep Context-db Small` | `prompts/keep-small.md` |
 | `# How to Navigate Context-db` | `prompts/navigate.md` |
@@ -695,10 +748,6 @@ heading shown.
 | `# Project Rules` | `configuration/ON_UPDATE.md` |
 | `# User Rules` | `configuration/ON_UPDATE.local.md`, if you have one. |
 | `# User Instruction` | What you typed, if anything. |
-
-With `--usage`, the first section is `# Context-db Update Usage` instead, from
-`prompts/update-usage.md`, and the folder list says so when a usage folder
-does not exist yet. The other sections are the same.
 
 `/context-db wip` sends:
 
@@ -716,12 +765,13 @@ does not exist yet. The other sections are the same.
 | `# User Instruction` | What you typed, if anything. |
 
 With a flag, the first section is that flag's own instructions instead:
-`prompts/wip-list.md`, `prompts/wip-cleanup.md`, or `prompts/wip-clear.md`.
-`--list` sends only that, the list, and your rules. `--cleanup` sends every
-section in the table, and adds `# Git State` after the first: the current
-branch, the uncommitted changes, and the commits that are not on the main
-branch. `--clear` sends its instructions, the list,
-`# How Work In Progress Is Kept`, and your rules.
+`prompts/wip-list.md`, `prompts/wip-maintain.md`, or `prompts/wip-clear.md`.
+`--list` sends only that, the list, and your rules. `--maintain` sends every
+section in the table, and adds two after the first: `# How to Check the Plans`,
+from `prompts/wip-check.md`, and `# Git State`, which is the current branch,
+the uncommitted changes, and the commits that are not on the main branch.
+`--clear` sends its instructions, the list, `# How Work In Progress Is Kept`,
+and your rules.
 
 `/context-db configure` sends:
 
@@ -742,16 +792,16 @@ branch. `--clear` sends its instructions, the list,
 | `# Context-db Is Not a Mirror of the Code` | `prompts/not-a-mirror.md` |
 | `# Keep Context-db Small` | `prompts/keep-small.md` |
 | `# How to Navigate Context-db` | `prompts/navigate.md` |
-| `# Git History` | `prompts/maintain-git.md`, then one line for each note, read from git. Only with `--use-git-diff`. |
+| `# Git History` | `prompts/maintain-git.md`, then one line for each note, read from git. |
 | `# Folders` | The project folder, your usage folders if there are any, and each background folder, one line each with its description. |
+| `# How to Check the Plans` | `prompts/wip-check.md`. Only when `wip/` holds a plan. |
+| `# Git State` | The current branch, the uncommitted changes, and the commits that are not on the main branch. Only when `wip/` holds a plan. |
+| `# Work In Progress` | The list in `wip/wip.md`. Only when `wip/` holds a plan. |
+| `# How to Check the Usage Folders` | `prompts/maintain-usage.md`. Only when you have a usage folder. |
 | `# File Format` | `prompts/format.md` |
 | `# Project Rules` | `configuration/ON_MAINTAIN.md` |
 | `# User Rules` | `configuration/ON_MAINTAIN.local.md`, if you have one. |
 | `# User Instruction` | What you typed, if anything. |
-
-With `--usage`, the first section is `# Context-db Maintain Usage` instead,
-from `prompts/maintain-usage.md`, and the git history lists the notes of the
-usage folders. The other sections are the same.
 
 An empty ON file adds no section, and neither does a missing one. With no
 instruction there is no `User Instruction` section.

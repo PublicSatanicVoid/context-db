@@ -1,8 +1,10 @@
 # Context-db Maintain
 
-Tidy the knowledge base in `{project_dir}/`, following the user instruction at
-the end of this output if there is one. With none, look at the whole project
-folder. With a folder or a topic, look only there.
+Tidy this project's knowledge base, following the user instruction at the end
+of this output if there is one. With none, look at all of it: the project
+folder, `{project_dir}/`, with its plans, and the usage folders. With a folder
+or a topic, look only there. This is a spring cleaning: take a broad view,
+whatever this session worked on.
 
 Your main job is to enforce the rule under Context-db Is Not a Mirror of the
 Code, below. `update` follows that rule when it writes; `maintain` goes looking
@@ -23,7 +25,8 @@ Start with the format check. Run:
 It names files and descriptions that are too long, folders with too many
 items, broken links, and missing descriptions. Then run `{toc_cmd}` on each
 folder in scope and read the notes there. For this command, every note in
-scope bears on the task.
+scope bears on the task. Git History, below, says which notes the code has
+moved furthest past: start with those.
 
 First, what the project already says. For every note that talks about code,
 open the code it is about, comments included, and compare:
@@ -65,6 +68,13 @@ alone:
   or no longer matches it, gets rewritten. It is all an agent sees before
   deciding whether to open the file.
 
+Last, the plans in `{wip_dir}/`, if How to Check the Plans appears below. That
+section, and not the rules here, decides what happens to a plan.
+`/context-db wip --maintain` does this part alone.
+
+And the usage folders, if How to Check the Usage Folders appears below. They
+have a different reader, and that section says what changes for them.
+
 ## How to change it
 
 - Delete a note without asking only when it is plainly false, when it plainly
@@ -74,11 +84,7 @@ alone:
   is not deleting it.
 - When you split, move, or rename a file, search `{cdb}/` for links to it and
   fix them.
-- Never edit a background folder; it is owned elsewhere. Leave `{wip_dir}/` to
-  `/context-db wip`.
-- A usage folder, if Folders below lists one, holds usage knowledge, for
-  agents in other projects, and `/context-db maintain --usage` tidies it.
-  Here, fix only what the format check reports in it.
+- Never edit a background folder; it is owned elsewhere.
 
 ## Finish
 

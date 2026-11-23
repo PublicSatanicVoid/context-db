@@ -21,8 +21,10 @@ repositories, found by a glob in the settings.
   example use the layout the owner described on 2026-11-20, usage folders kept
   in `okf/`: `okf/*-usage` and `../*/okf/*-usage`.
 - Only `prompt` sends the list ("probably just on on-prompt").
-- A setting says whether every `prompt` sends it. When it is false, only
-  `prompt --use-global-context` does.
+- There is no switch. Patterns that are set are listed on every `prompt`. The
+  owner first asked for a `use_global_context` setting with a flag to match,
+  and removed both on 2026-11-23 with the other flags that narrow a command.
+  See [command-set.md](./command-set.md).
 - A matched folder is described by the file named after it, taken literally:
   `ledger-usage.okf/ledger-usage.okf.md`. The owner was asked whether the
   `.okf` ending should be dropped and said no.
@@ -32,14 +34,13 @@ repositories, found by a glob in the settings.
 The owner saw the first two in the summary of the work and let them stand. The
 last two were not pointed out.
 
-- Two keys in `settings.md`, not a new file. Both pass the test in
+- One optional key in `settings.md`, not a new file. It passes the test in
   [configuration-folder.md](./configuration-folder.md): the script cannot work
-  either out. Both are optional. The switch counts as true when it is left out,
-  because someone who adds a pattern expects to see its folders.
+  it out.
 - A match that `context-db/` already holds is dropped, so
   `../*/context-db/*-project` does not list this project twice. So is each of
   the project's own usage folders, which `prompt` lists under Folders.
-- Without the flag, patterns that match nothing add no section, the way an
-  empty wip list adds none. With the flag, the section says that there is none.
+- Patterns that match nothing add no section, the way an empty wip list adds
+  none.
 - The words are "global context" for the feature and "global folder" for one
   matched folder.

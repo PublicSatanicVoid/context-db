@@ -25,7 +25,7 @@ context-db keeps two kinds of knowledge, because they have two readers.
 | Who it is for | Agents working on your project | Agents in other projects that use yours |
 | What it holds | Decisions and their reasons, conventions, pitfalls, plans | Where to start, the rules for calling your project, the mistakes its users make |
 | Where it is kept | The project folder, `<name>-project/`, in `context-db/` | A [usage folder](layout.md#usage-folders), `<name>-usage/`. There can be several. |
-| What writes it | `update`, `wip`, and `maintain` | `update --usage` and `maintain --usage` |
+| What writes it | `update`, `wip`, and `maintain` | `update` and `maintain` |
 | When it is read | First, on every task in your project | In a project that uses yours, when a task there involves your project |
 
 Project knowledge is internal. It drives the work on your project from day to
@@ -106,7 +106,7 @@ neither, the agent leaves the commit to you.
   only what future agents need to know to be effective, and `maintain` clears
   out what has gone stale, so it stays small and efficient.
 - `wip` keeps a short list of the work in progress with a plan for each, so a
-  new session can pick up long work where the last one stopped: `prompt --wip`
+  new session can pick up long work where the last one stopped: `prompt`
   starts from the plan, and `update` brings it up to date. It is useful on a
   new project, where one feature often takes many agent sessions.
 - Shared standards and reference material are mounted as background folders.
@@ -149,6 +149,53 @@ files and one Python script.
 
 ## The commands
 
+All of it, as you type it:
+
+```text
+Before a task
+  /context-db prompt <task>               look up what the knowledge base says
+
+After a task, from what this session learned
+  /context-db update                      write down what the next agent needs
+  /context-db update <lesson>             write down this in particular
+  /context-db update --commit             then commit; --push also pushes
+
+During long work
+  /context-db wip                         write down where the work stands
+  /context-db wip --list                  show what is in progress
+  /context-db wip --maintain              check every plan, delete what has landed
+  /context-db wip --clear                 delete every plan
+
+Rarely, as a spring cleaning, checked against git
+  /context-db maintain                    cut what is stale, repeated, not needed
+  /context-db maintain <folder or topic>  only there
+
+First, and whenever you like
+  /context-db configure                   set up, or change how the agent behaves
+
+On any command
+  --show-context                          show the message it sends, and stop
+  --help                                  its options
+```
+
+Each command is a starting point. It opens the conversation with the
+instructions you would otherwise type yourself every time, and that is all
+context-db saves you: saying the same things over and over. `prompt`,
+`update`, and `maintain` cover the whole knowledge base, and no flag narrows
+them. To narrow one, or to change how it works, say so in plain words on the
+line after it, or at any point later in the conversation:
+
+```text
+/context-db update
+
+Only the usage folder. The refund endpoint now needs an idempotency key.
+```
+
+`update` goes by what the agent remembers of the session. `maintain` compares
+the knowledge base with the code and the git history. Either can be told
+otherwise: ask `update` to read a `git diff` as well, or `maintain` to leave
+git out. [A command is a starting point](commands.md#a-command-is-a-starting-point) has more examples.
+
 ::::{grid} 1 1 1 1
 :gutter: 3
 
@@ -157,8 +204,7 @@ files and one Python script.
 :link: commands
 :link-type: doc
 
-Before a task. Looks up what the knowledge base says about it. `--wip` picks up
-the work in progress.
+Before a task. Looks up what the knowledge base says about it.
 :::
 
 :::{grid-item-card} /context-db update
@@ -166,9 +212,8 @@ the work in progress.
 :link: commands
 :link-type: doc
 
-After a task. Writes down what the next agent would need, if anything. `--usage`
-writes down what other projects need to know to use this one. Optional:
-`--commit` also commits, and `--push` commits and pushes.
+After a task. Writes down what this session learned, if the next agent would
+need it. Optional: `--commit` also commits, and `--push` commits and pushes.
 :::
 
 :::{grid-item-card} /context-db wip
@@ -177,7 +222,7 @@ writes down what other projects need to know to use this one. Optional:
 :link-type: doc
 
 Optional, for long work. Keeps a short list of the work in progress. `--list`,
-`--cleanup`, `--clear`.
+`--maintain`, `--clear`.
 :::
 
 :::{grid-item-card} /context-db configure
@@ -194,10 +239,9 @@ the files by hand afterwards.
 :link: commands
 :link-type: doc
 
-Now and then. Removes what the code and the docs already say and what is no
+Rarely, as a spring cleaning. Goes through the whole knowledge base against the
+code and the git history: removes what the project already says and what is no
 longer needed, fixes what has drifted, and splits and reorganizes.
-`--use-git-diff` also reads the git history for what has gone out of date.
-`--usage` tidies the usage folders instead.
 :::
 ::::
 
@@ -340,8 +384,8 @@ instead of one big file:
 - `update`, after a task: whether anything needs to change at all, what belongs
   in the knowledge base and what does not, and which notes the session showed
   to be wrong. Most of the time nothing changes.
-- `maintain`, now and then: how to find notes that repeat the code, have
-  drifted from it, or are no longer needed, and remove them.
+- `maintain`, rarely, as a spring cleaning: how to find notes that repeat the
+  code, have drifted from it, or are no longer needed, and remove them.
 - `wip`, during long work: how to keep a short record of where things stand.
 
 The rest stays out of the agent's context. Where a note and the code disagree,

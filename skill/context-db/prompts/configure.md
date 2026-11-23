@@ -154,20 +154,17 @@ Make each change as soon as the user answers, and show them the new text.
     `../*/context-db/*-project/*-usage` matches the usage folder of every
     repository next to this one that keeps it in the usual place, and
     `../*/okf/*-usage` matches every folder whose name ends in `-usage` inside
-    the `okf/` folder of each of them. Then ask: "List them on every
-    `prompt`, or only when you add `--use-global-context`?" Options: every
-    prompt (recommended for a handful of folders); only with the flag. Then
-    run this, with each pattern in single quotes after a `--global-context`
-    of its own, and `true` for every prompt or `false` for only with the flag:
+    the `okf/` folder of each of them. Then run this, with each pattern in
+    single quotes after a `--global-context` of its own:
 
-        {setup_cmd} --global-context '<pattern>' --use-global-context <true or false>
+        {setup_cmd} --global-context '<pattern>'
 
     For patterns that fit only this user's machine, pass
     `--local 'global_context=<patterns, separated by spaces>'` in place of
     `--global-context`.
 12. **Usage folders.** A usage folder holds usage knowledge: what agents in
-    other projects need to know to use this one. `/context-db update --usage`
-    writes it, and those projects mount it or find it as global context.
+    other projects need to know to use this one. `/context-db update` writes
+    it, and those projects mount it or find it as global context.
     Detected State says where this project's are kept and whether they exist
     yet. Ask only when the user said in question 4 that other code depends on
     this project, or when Detected State shows a `usage_folders` setting:
@@ -182,9 +179,10 @@ Make each change as soon as the user answers, and show them the new text.
     A project whose users fall into separate groups can keep a usage folder
     for each: pass `--usage-folder` once for each path. For inside the project
     folder, delete the `usage_folders` line from `{settings}` if it has one.
-    Nothing is created now: a folder appears the first time
-    `/context-db update --usage` has something to write in it. If a usage
-    folder already exists in the old place, move it to the new one.
+    If a usage folder already exists in the old place, move it to the new
+    one. Create each one that does not exist yet with only its descriptor,
+    `<folder>/<folder name>.md`, whose `description` says what this project
+    is. `/context-db update` fills it.
 13. **Anything else.** Tell the user in a sentence per file what the ON files
     make the agent do now. Then ask: "Is there anything else the agent should
     always do?" Options: no (recommended); yes, for `prompt` (while it works),
@@ -220,7 +218,8 @@ It must report no errors. Then give the user a short summary, and nothing more:
   nothing else to keep in step.
 - **What to type**: `/context-db prompt` before work, with the task on a new
   line after it; `/context-db update` after the work. `/context-db wip` is
-  optional, for keeping track of long-running work. `/context-db maintain` now
-  and then tidies the knowledge base. `/context-db --help` lists them.
+  optional, for keeping track of long-running work. `/context-db maintain`,
+  rarely, tidies the whole knowledge base. `/context-db --help` lists them.
+  Each is a starting point: anything else the user wants, they say in words.
 
 Do not commit; leave the changes for the user to review.

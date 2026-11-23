@@ -43,7 +43,7 @@ home.
 | A fact about one piece of code | A comment next to that code | You. The agent suggests the comment. |
 | How to use your project, for people | Your README and your docs | You |
 | Project knowledge: what an agent needs in order to work on your project, and cannot read from any of those | The [project folder](#the-project-folder) | `update` and `maintain` |
-| Usage knowledge: what an agent in another project needs in order to use yours, and your docs do not say | A [usage folder](#usage-folders) | `update --usage` and `maintain --usage` |
+| Usage knowledge: what an agent in another project needs in order to use yours, and your docs do not say | A [usage folder](#usage-folders) | `update` and `maintain`, once you have one |
 | Where the work in progress stands | The [`wip/` folder](#the-wip-folder) | `wip`, and `update` for the plan a session worked from |
 | Rules the agent must see every time a command runs | The [ON files](commands.md#the-rule-files-control-how-the-agent-behaves) | You, or `configure` |
 | What another project knows, or your whole team | [Background folders](#background-folders) and [global context](#global-context) | Their owners. Your agent only reads them. |
@@ -101,10 +101,14 @@ with the repository:
 :language: markdown
 ```
 
-A usage folder is optional, and nothing creates one until you ask:
+A usage folder is optional, and nothing creates one until you ask. Tell
+`update` to start it:
 
 ```text
-/context-db update --usage
+/context-db update
+
+Start a usage folder. Other teams call the refunds API, and they keep
+getting the idempotency key wrong.
 ```
 
 By default it is a folder inside the project folder, named after the project:
@@ -118,13 +122,15 @@ context-db/
         └── calling.md
 ```
 
-| Typed | What the agent does |
-| --- | --- |
-| `/context-db update --usage` | Writes down what other projects need to know, if anything is missing. |
-| `/context-db maintain --usage` | Removes what your project already tells its users, moves project knowledge out, and fixes what has drifted. |
+Once the folder exists, the everyday commands look after it along with the
+project folder. No flag is needed.
 
-`update` and `maintain` without the flag work on the project folder and leave
-the usage folders to these two.
+| Typed | What the agent does in a usage folder |
+| --- | --- |
+| `/context-db update` | Writes down what other projects need to know, if the session changed any of it. |
+| `/context-db maintain` | Removes what your project already tells its users, moves project knowledge out, and fixes what has drifted. |
+
+To work on the usage folder alone, say so: "Only the usage folder."
 
 ### Keeping it somewhere else
 
@@ -156,8 +162,8 @@ usage_folders: okf/acme-payments-usage okf/acme-payments-admin-usage
 
 Each folder stands on its own. It has a description of its own, a project that
 uses yours mounts only the ones it needs, and a link never crosses from one to
-another. `update --usage` puts a note in the folder whose readers need it, and
-never the same thing in two. It does not start a folder that the setting does
+another. `update` puts a note in the folder whose readers need it, and never
+the same thing in two. It does not start a folder that the setting does
 not name. Adding one is your decision.
 
 ### How another project reads it
@@ -243,7 +249,7 @@ the background folders, one line each with its description:
 ```
 
 The agent looks into one only when its description matches the task, and it
-never changes one. `update`, `wip`, and `maintain` do not list them.
+never changes one. `update` and `maintain` do not list them.
 
 The description comes from the file named after the folder, the same as for any
 [folder](#a-folder): `ledger-usage/ledger-usage.md` here. A folder that
@@ -251,14 +257,7 @@ The description comes from the file named after the folder, the same as for any
 a second time. Neither are your own usage folders, which `prompt` lists next to
 the project folder.
 
-A second setting decides when the list is sent:
-
-| `use_global_context` | What happens |
-| --- | --- |
-| `true`, or left out | Every `prompt` lists the folders. |
-| `false` | Only `/context-db prompt --use-global-context` lists them. Use this when the patterns match many folders and most tasks need none of them. |
-
-Both settings can also go in `settings.local.md`, when the way your machine is
+The setting can also go in `settings.local.md`, when the way your machine is
 laid out is not the way your teammates' machines are.
 
 ## Sharing
@@ -540,9 +539,9 @@ branch: feature/refunds
 ---
 ```
 
-The [`wip` command](commands.md#context-db-wip) writes the plans, `update`
-keeps the one a session worked from up to date, and the checker warns about a
-plan that `wip.md` does not list.
+[`wip`](commands.md#context-db-wip) writes the plans, `update` keeps the one a
+session worked from up to date, `wip --maintain` and `maintain` check them
+all, and the checker warns about a plan that `wip.md` does not list.
 
 ## What the checker looks for
 

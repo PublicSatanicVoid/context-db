@@ -78,7 +78,7 @@ kept things as they are: "this is a standard format".
 The owner: "this is just something fundamental in the core instructions given
 to the agent on every skill invocation." It lives in one file,
 `skill/context-db/prompts/navigate.md` (v0.0 called it Read Mechanics), and
-`prompt`, `update`, `maintain`, `wip`, and `wip --cleanup` all include it.
+`prompt`, `update`, `maintain`, `wip`, and `wip --maintain` all include it.
 `SKILL.md` repeats it. `prompt` builds no listing itself; it only tells the
 agent how to call the script. A test fails if a reading command leaves it out.
 

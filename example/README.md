@@ -32,8 +32,9 @@ Try it:
 ```bash
 cd example/acme-payments-repo
 python3 .claude/skills/context-db/context-db.py prompt "add a refund endpoint"
-python3 .claude/skills/context-db/context-db.py update --usage
+python3 .claude/skills/context-db/context-db.py update
 python3 .claude/skills/context-db/context-db.py wip --list
+python3 .claude/skills/context-db/context-db.py maintain
 python3 .claude/skills/context-db/context-db.py toc
 python3 .claude/skills/context-db/context-db.py toc context-db/coding-standards
 python3 .claude/skills/context-db/context-db.py toc ../acme-ledger-repo/okf/acme-ledger-usage

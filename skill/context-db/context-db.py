@@ -6,15 +6,22 @@ Commands the user invokes. Each prints instructions that the calling agent
 follows; COMMAND_SUMMARIES below is the one-line description of each, shown by
 --help and repeated word for word in the README and on the docs home page.
 
-  prompt "<task>"         Before a task (--wip to pick up the work in progress;
-                          --use-global-context).
-  update ["<learning>"]   After a task (--commit / --push to commit too;
-                          --usage to write the usage folders instead).
-  wip ["<instruction>"]   Optional (--list, --cleanup, --clear).
+  prompt "<task>"         Before a task.
+  update ["<learning>"]   After a task, from what the session learned
+                          (--commit / --push to commit too).
+  wip ["<what>"]          During long work: record where it stands (--list,
+                          --maintain, --clear).
   configure               First, and whenever you like. With --project and the
                           other setting flags it writes the files itself.
-  maintain ["<scope>"]    Now and then: tidy the knowledge base (--use-git-diff;
-                          --usage to tidy the usage folders instead).
+  maintain ["<scope>"]    Rarely: a spring cleaning of the whole knowledge base,
+                          checked against the code and the git history.
+
+No flag narrows what prompt, update, or maintain look at. Each covers all of
+the project's knowledge, and the user narrows or changes that in words, in the
+instruction. The commands are a starting point for a conversation.
+
+API below is the whole of it as the user types it. --help prints it, and the
+README and the docs home page repeat it.
 
 Every one of them takes --show-context: print the same message, wrapped so that
 the agent shows it to the user and does not act on it.
@@ -43,9 +50,9 @@ Layout (the file format is described in prompts/format.md):
       ON_PROMPT.local.md ...    one user's rules for that command; gitignored
     <project>-project/          the project folder: project knowledge
       wip/wip.md                optional list of the work in progress
-      <project>-usage/          optional usage folder: usage knowledge. `update
-                                --usage` writes it. The `usage_folders` setting
-                                can keep it elsewhere, and can name more than one
+      <project>-usage/          optional usage folder: usage knowledge. The
+                                `usage_folders` setting can keep it elsewhere,
+                                and can name more than one
     <anything-else>/            background folders, real or symlinked: read-only
 
 A project keeps two kinds of knowledge apart, because they have two readers.
@@ -92,17 +99,14 @@ REQUIRED_SETTINGS = ("project", "python", "main_branch")
 # and read from the repository root; {project} in one stands for the project
 # name. Left out, there is one: <project>-usage inside the project folder.
 # global_context: glob patterns, separated by spaces and read from the repository
-# root, that match knowledge folders outside context-db/.
-# use_global_context: whether every `prompt` lists them (true, also when the key
-# is left out) or only `prompt --use-global-context` (false).
-OPTIONAL_SETTINGS = ("usage_folders", "global_context", "use_global_context")
+# root, that match knowledge folders outside context-db/. `prompt` lists them.
+OPTIONAL_SETTINGS = ("usage_folders", "global_context")
 SETTINGS_KEYS = REQUIRED_SETTINGS + OPTIONAL_SETTINGS
 # The line on which a settings file names more settings files, separated by
 # spaces and read from the repository root. Each is read after the file that
 # names it and overrides it. It is written by hand: no command sets it.
 SETTINGS_FILES = "settings_files"
 PROJECT_NAME = "{project}"  # stands for the project name in the usage_folders setting
-SWITCH_VALUES = ("true", "false")
 WIP_LIST_NAME = "wip.md"
 INDEX_NAME = "index.md"
 RESERVED_FILES = (INDEX_NAME, "log.md")
@@ -129,33 +133,52 @@ SKILL_DIR = os.path.dirname(os.path.abspath(__file__))
 
 COMMAND_SUMMARIES = {
     "prompt": """
-Before a task. Looks up what the knowledge base says about it. --wip picks up
-the work in progress.
+Before a task. Looks up what the knowledge base says about it.
 """,
     "update": """
-After a task. Writes down what the next agent would need, if anything. --usage
-writes down what other projects need to know to use this one. Optional:
---commit also commits, and --push commits and pushes.
+After a task. Writes down what this session learned, if the next agent would
+need it. Optional: --commit also commits, and --push commits and pushes.
 """,
     "wip": """
 Optional, for long work. Keeps a short list of the work in progress. --list,
---cleanup, --clear.
+--maintain, --clear.
 """,
     "configure": """
 First, and whenever you like. Sets context-db up by asking a few questions;
 edit the files by hand afterwards.
 """,
     "maintain": """
-Now and then. Removes what the code and the docs already say and what is no
-longer needed, fixes what has drifted, and splits and reorganizes.
---use-git-diff also reads the git history for what has gone out of date.
---usage tidies the usage folders instead.
+Rarely, as a spring cleaning. Goes through the whole knowledge base against
+the code and the git history: removes what the project already says and what
+is no longer needed, fixes what has drifted, and splits and reorganizes.
 """,
 }
 
-SHOW_CONTEXT_HELP = """
-Add --show-context to any command to see the message it sends the agent. The
-agent shows it to you and does nothing else.
+API = """
+Before a task
+  /context-db prompt <task>               look up what the knowledge base says
+
+After a task, from what this session learned
+  /context-db update                      write down what the next agent needs
+  /context-db update <lesson>             write down this in particular
+  /context-db update --commit             then commit; --push also pushes
+
+During long work
+  /context-db wip                         write down where the work stands
+  /context-db wip --list                  show what is in progress
+  /context-db wip --maintain              check every plan, delete what has landed
+  /context-db wip --clear                 delete every plan
+
+Rarely, as a spring cleaning, checked against git
+  /context-db maintain                    cut what is stale, repeated, not needed
+  /context-db maintain <folder or topic>  only there
+
+First, and whenever you like
+  /context-db configure                   set up, or change how the agent behaves
+
+On any command
+  --show-context                          show the message it sends, and stop
+  --help                                  its options
 """
 
 SHOW_CONTEXT = """
@@ -186,7 +209,7 @@ Error: --show-context shows the message a command sends the agent. With a settin
 
 NO_HISTORY = """
 Not a git repository, or git is unavailable, so there is no history to read.
-Tell the user, and maintain the knowledge base without it.
+Maintain the knowledge base without it.
 """
 
 HISTORY_ROW = """
@@ -213,11 +236,6 @@ Tell the user, and offer to run `/context-db configure`. Do nothing else.
 
 NO_INSTRUCTION = """
 No instruction was given. Ask the user what they want to work on.
-"""
-
-NO_WIP_TO_PICK_UP = """
-`{wip_list}` lists no work in progress, so there is none to pick up. Tell the
-user in one line.
 """
 
 PROJECT_FOLDER_MISSING = """
@@ -258,39 +276,10 @@ as it lists a folder inside `{cdb}/`. Look into one only when its description
 bears on the instruction. Never edit one.
 """
 
-GLOBAL_CONTEXT_NOT_SET = """
-# Global Context
-
-There is none to list: `{settings_path}` has no `global_context` line. Tell the
-user in one line, and carry on without it.
-"""
-
-GLOBAL_CONTEXT_NO_MATCH = """
-# Global Context
-
-There is none to list: the `global_context` setting in `{settings_path}` is
-`{patterns}`, and that matches no folder from `{root}/`. Tell the user in one
-line, and carry on without it.
-"""
-
 WIP_FOR_PROMPT = """
 The work happening right now, from `{wip_list}`. Its links are relative to
 `{wip_dir}/`. Open the plans that bear on the instruction{on_branch} before
 anything else.
-"""
-
-WIP_TO_PICK_UP = """
-This task picks up work in progress, listed here from `{wip_list}`. Its links
-are relative to `{wip_dir}/`. Before anything else, read in full the plans it
-is about{on_branch}, and go on from where they say the work stands.
-"""
-
-WIP_TO_REPORT = """
-The user is picking up work in progress and has given no task yet. It is
-listed here from `{wip_list}`, and its links are relative to `{wip_dir}/`.
-Read the plans in full{on_branch}, tell the user where the work stands and
-what comes next, and wait. Their answer is the instruction: look into the
-folders for it then.
 """
 
 WIP_LISTED = """
@@ -306,6 +295,18 @@ USER_RULES = """
 
 These are this user's own rules, from `{path}`. Where they differ from the
 project's rules, follow these.
+"""
+
+USAGE_THOUGHT = """
+- What this session changed or showed about using this project from outside. Usage Knowledge, below, says what counts.
+"""
+
+USAGE_HOME = """
+a usage folder ({usage_list}). Usage Knowledge, below, says what goes there.
+"""
+
+NO_USAGE_HOME = """
+a usage folder, which this project does not have yet. Start one only when the user asks for it: create its descriptor, `{descriptor}`, with a `description` that says what this project is and what the notes cover, then run `{update_cmd}` with the same instruction. It then says what belongs there.
 """
 
 NOTHING_TO_ADD = """
@@ -416,22 +417,21 @@ Settings for the context-db skills. Edit them by hand whenever you like.
 
 - project: the project folder is context-db/<project>-project/.
 - python: the command that runs the skills' script, Python 3.8 or newer.
-- main_branch: the branch that `/context-db wip --cleanup` compares against.
+- main_branch: the branch that `/context-db wip --maintain` checks the plans
+  against.
 
-Four more are optional. Add them as lines of their own:
+Three more are optional. Add them as lines of their own:
 
 - usage_folders: where the usage folders are kept, as paths from the top of
   the repository, such as okf/{{project}}-usage. {{project}} stands for the
   project name, and several paths are separated by spaces. Left out, there is
   one: <project>-usage/ inside the project folder. A usage folder holds what
-  other projects need to know to use this one, and
-  `/context-db update --usage` writes it.
+  other projects need to know to use this one, and `/context-db update`
+  writes it.
 - global_context: glob patterns that match knowledge folders outside
   context-db/, such as ../*/okf/*-usage. They are read from the top of the
   repository, and several are separated by spaces. `/context-db prompt` lists
   the folders they match.
-- use_global_context: false lists those folders only on
-  `/context-db prompt --use-global-context`. Left out, it is true.
 - settings_files: more settings files to read, such as
   ~/.config/context-db/team.md, separated by spaces. Each is read after this
   file and overrides it.
@@ -597,12 +597,6 @@ def write_settings(path, values, default_body):
     write_text(path, f"---\n{header}\n---\n{body}")
 
 
-def check_switch(key, value, where):
-    """Stop unless an on/off setting is spelled true or false."""
-    if value.lower() not in SWITCH_VALUES:
-        sys.exit(f"Error: `{key}` in {where} must be true or false, not `{value}`.")
-
-
 def unknown_settings(values):
     """The keys of a settings file that are not settings.
 
@@ -613,14 +607,12 @@ def unknown_settings(values):
 
 
 def check_settings(values, path):
-    """Stop on a key that is not a setting, or an on/off setting that is neither."""
+    """Stop on a key that is not a setting."""
     unknown = unknown_settings(values)
     if unknown:
         keys = ", ".join(f"`{key}`" for key in unknown)
         known = ", ".join(SETTINGS_KEYS + (SETTINGS_FILES,))
         sys.exit(text(UNKNOWN_SETTING, path=path, keys=keys, known=known))
-    if "use_global_context" in values:
-        check_switch("use_global_context", values["use_global_context"], path)
 
 
 def load_config(cdb):
@@ -697,11 +689,6 @@ def own_bundles(cdb, config):
 
 def global_patterns(config):
     return config.get("global_context", "").split()  # an optional setting
-
-
-def uses_global_context(config):
-    """Whether every `prompt` lists the global folders. True unless the setting says false."""
-    return config.get("use_global_context", "true").lower() == "true"  # an optional setting
 
 
 # ── Frontmatter ──────────────────────────────────────────────────────────────
@@ -1305,21 +1292,15 @@ def global_folders(cdb, config):
     return found
 
 
-def global_context_section(cdb, config, show_empty):
-    """One line for each global folder. When there is none, "" unless show_empty."""
-    names = {"cdb": cdb, "settings_path": settings_path(cdb)}
+def global_context_section(cdb, config):
+    """One line for each global folder, or "" when the patterns match none."""
     folders = global_folders(cdb, config)
-    if folders:
-        toc_cmd = f"{script_command(config['python'])} toc"
-        entries = "\n".join(folder_entry("Global folder", folder) for folder in folders)
-        return f"{text(GLOBAL_CONTEXT, toc_cmd=toc_cmd, **names)}\n\n{entries}"
-    if not show_empty:
+    if not folders:
         return ""
-    patterns = " ".join(global_patterns(config))
-    if not patterns:
-        return text(GLOBAL_CONTEXT_NOT_SET, **names)
-    root = rel(os.path.dirname(os.path.abspath(cdb)))
-    return text(GLOBAL_CONTEXT_NO_MATCH, patterns=patterns, root=root, **names)
+    toc_cmd = f"{script_command(config['python'])} toc"
+    intro = text(GLOBAL_CONTEXT, toc_cmd=toc_cmd, cdb=cdb, settings_path=settings_path(cdb))
+    entries = "\n".join(folder_entry("Global folder", folder) for folder in folders)
+    return f"{intro}\n\n{entries}"
 
 
 def wip_dir(cdb, config):
@@ -1352,6 +1333,16 @@ def wip_section(cdb, config, intro, show_empty, **values):
     if not items:
         return "# Work In Progress\n\n" + text(WIP_EMPTY, **names) if show_empty else ""
     return f"# Work In Progress\n\n{text(intro, **names)}\n\n{items}"
+
+
+def has_plans(cdb, config):
+    """Whether wip/ lists or holds any plan."""
+    if wip_list(cdb, config):
+        return True
+    wip = wip_dir(cdb, config)
+    if not os.path.isdir(wip):
+        return False
+    return bool(folder_subfolders(wip)) or folder_files(wip) not in ([], [WIP_LIST_NAME])
 
 
 def current_branch():
@@ -1397,8 +1388,23 @@ def git_state_section(cdb, config):
     return "\n".join(lines)
 
 
-# The history behind `maintain --use-git-diff`: for each note, how far the
-# project has moved since the note last changed.
+def plan_check_sections(cdb, config):
+    """How the plans are checked, the git state to check them against, and the list."""
+    return [
+        load_prompt(
+            "wip-check",
+            wip_list=wip_list_path(cdb, config),
+            wip_dir=wip_dir(cdb, config),
+            project_dir=project_dir(cdb, config),
+            main=config["main_branch"],
+        ),
+        git_state_section(cdb, config),
+        wip_section(cdb, config, WIP_LISTED, show_empty=True),
+    ]
+
+
+# The history `maintain` reads: for each note, how far the project has moved
+# since the note last changed.
 
 MAX_HISTORY_NOTES = 60
 
@@ -1447,23 +1453,21 @@ def linked_project_files(path, body, notes):
     return sorted(set(found))
 
 
-def git_history_section(cdb, config, of_usage):
+def git_history_section(cdb, config):
     """Each note against the commits made to the rest of the project since it last changed.
 
-    The notes are the project folder's own: wip/ and the usage folders have their
-    own commands. With of_usage they are the usage folders'.
+    The notes are the project folder's and the usage folders'. The plans in wip/
+    are left out: they are checked against the state of the branch instead.
     """
     if not current_branch():
         return "# Git History\n\n" + text(NO_HISTORY)
     notes = note_folders(cdb, config)
     outside = outside_the_notes(cdb, config)
     usage = usage_dirs(cdb, config)
-    if not of_usage:
-        found = bundle_notes(project_dir(cdb, config), [wip_dir(cdb, config)] + usage)
-    else:
-        found = [
-            note for folder in usage if os.path.isdir(folder) for note in bundle_notes(folder, [])
-        ]
+    found = bundle_notes(project_dir(cdb, config), [wip_dir(cdb, config)] + usage)
+    found += [
+        note for folder in usage if os.path.isdir(folder) for note in bundle_notes(folder, [])
+    ]
     rows = []  # (linked files changed, commits behind, line), most out of date sorts first
     for path, body in found:
         last = git("log", "-1", "--format=%h %as", "--", path).split()
@@ -1497,38 +1501,20 @@ def cmd_prompt(args):
     cdb = context_db_dir()
     config = require_config(cdb, args)
     instruction = instruction_of(args)
-    picking_up = args.wip and bool(wip_list(cdb, config))
-    if not instruction and not picking_up:
-        none = text(NO_WIP_TO_PICK_UP, wip_list=wip_list_path(cdb, config)) if args.wip else ""
-        emit(args, [none, text(NO_INSTRUCTION)])
+    if not instruction:
+        emit(args, [text(NO_INSTRUCTION)])
         return
     branch = current_branch()
     on_branch = f" (the current branch is `{branch}`)" if branch else ""
-    if not args.wip:
-        wip = wip_section(cdb, config, WIP_FOR_PROMPT, show_empty=False, on_branch=on_branch)
-    elif picking_up:
-        intro = WIP_TO_PICK_UP if instruction else WIP_TO_REPORT
-        wip = wip_section(cdb, config, intro, show_empty=False, on_branch=on_branch)
-    else:
-        wip = "# Work In Progress\n\n" + text(
-            NO_WIP_TO_PICK_UP, wip_list=wip_list_path(cdb, config)
-        )
-    # The flag asks for the global folders outright, so it also says when there are none.
-    asked = args.use_global_context
-    global_context = (
-        global_context_section(cdb, config, show_empty=asked)
-        if asked or uses_global_context(config)
-        else ""
-    )
     emit(
         args,
         [
             load_prompt("prompt", cdb=cdb, project_dir=project_dir(cdb, config)),
             navigate_section(config),
             load_prompt("not-a-mirror"),
-            wip,
+            wip_section(cdb, config, WIP_FOR_PROMPT, show_empty=False, on_branch=on_branch),
             folders_section(cdb, config),
-            global_context,
+            global_context_section(cdb, config),
             on_file_text(cdb, "prompt"),
             instruction_section(instruction),
         ],
@@ -1540,29 +1526,43 @@ def usage_list(cdb, config):
     return ", ".join(f"`{folder}/`" for folder in usage_dirs(cdb, config))
 
 
+def has_usage(cdb, config):
+    """Whether any usage folder exists yet."""
+    return any(os.path.isdir(folder) for folder in usage_dirs(cdb, config))
+
+
 def cmd_update(args):
-    """Store what was learned: in the project folder, or with --usage in the usage folders."""
+    """Store what the session learned, in the project folder and the usage folders."""
     cdb = context_db_dir()
     config = require_config(cdb, args)
     commit = args.commit or args.push
-    toc_cmd = f"{script_command(config['python'])} toc"
+    script = script_command(config["python"])
+    usage = has_usage(cdb, config)
+    first_usage = usage_dirs(cdb, config)[0]
+    names = {
+        "usage_list": usage_list(cdb, config),
+        "descriptor": os.path.join(first_usage, f"{os.path.basename(first_usage)}.md"),
+        "update_cmd": f"{script} update",
+        "toc_cmd": f"{script} toc",
+    }
     sections = [
         load_prompt(
-            "update-usage" if args.usage else "update",
+            "update",
             cdb=cdb,
             project_dir=project_dir(cdb, config),
-            usage_list=usage_list(cdb, config),
+            usage_thought="\n" + text(USAGE_THOUGHT) if usage else "",
+            usage_home=text(USAGE_HOME if usage else NO_USAGE_HOME, **names),
             conf_dir=conf_dir(cdb),
-            settings=settings_path(cdb),
             wip_dir=wip_dir(cdb, config),
-            toc_cmd=toc_cmd,
-            check_cmd=f"{toc_cmd} --check",
+            toc_cmd=f"{script} toc",
+            check_cmd=f"{script} toc --check",
             nothing_to_add=text(NOTHING_TO_ADD_BUT_COMMIT if commit else NOTHING_TO_ADD),
         ),
+        load_prompt("update-usage", **names) if usage else "",
         load_prompt("not-a-mirror"),
         load_prompt("keep-small"),
         navigate_section(config),
-        folders_section(cdb, config, usage_missing=args.usage),
+        folders_section(cdb, config, usage_missing=usage),
         load_prompt("format"),
     ]
     if commit:
@@ -1574,56 +1574,57 @@ def cmd_update(args):
 
 
 def cmd_maintain(args):
-    """Tidy the project folder, or with --usage the usage folders."""
+    """Tidy the whole knowledge base: the project folder, its plans, and the usage folders."""
     cdb = context_db_dir()
     config = require_config(cdb, args)
     toc_cmd = f"{script_command(config['python'])} toc"
-    emit(
-        args,
-        [
-            load_prompt(
-                "maintain-usage" if args.usage else "maintain",
-                cdb=cdb,
-                project_dir=project_dir(cdb, config),
-                usage_list=usage_list(cdb, config),
-                wip_dir=wip_dir(cdb, config),
-                toc_cmd=toc_cmd,
-                check_cmd=f"{toc_cmd} --check",
-            ),
-            load_prompt("not-a-mirror"),
-            load_prompt("keep-small"),
-            navigate_section(config),
-            git_history_section(cdb, config, args.usage) if args.use_git_diff else "",
-            folders_section(cdb, config, usage_missing=args.usage),
-            load_prompt("format"),
-            on_file_text(cdb, "maintain"),
-            instruction_section(instruction_of(args)),
-        ],
-    )
+    sections = [
+        load_prompt(
+            "maintain",
+            cdb=cdb,
+            project_dir=project_dir(cdb, config),
+            wip_dir=wip_dir(cdb, config),
+            toc_cmd=toc_cmd,
+            check_cmd=f"{toc_cmd} --check",
+        ),
+        load_prompt("not-a-mirror"),
+        load_prompt("keep-small"),
+        navigate_section(config),
+        git_history_section(cdb, config),
+        folders_section(cdb, config),
+    ]
+    if has_plans(cdb, config):
+        sections.extend(plan_check_sections(cdb, config))
+    if has_usage(cdb, config):
+        sections.append(load_prompt("maintain-usage", usage_list=usage_list(cdb, config)))
+    sections.append(load_prompt("format"))
+    sections.append(on_file_text(cdb, "maintain"))
+    sections.append(instruction_section(instruction_of(args)))
+    emit(args, sections)
 
 
 def cmd_wip(args):
-    """Record the current work, or with a flag: list, clean up, or clear it all."""
+    """Record the current work, or with a flag: list it, check every plan, or clear it all."""
     cdb = context_db_dir()
     config = require_config(cdb, args)
-    mode = "list" if args.list else "cleanup" if args.cleanup else "clear" if args.clear else ""
+    mode = "list" if args.list else "maintain" if args.maintain else "clear" if args.clear else ""
+    toc_cmd = f"{script_command(config['python'])} toc"
     values = {
         "project_dir": project_dir(cdb, config),
         "wip_dir": wip_dir(cdb, config),
         "wip_list": wip_list_path(cdb, config),
         "branch": current_branch() or "<branch>",
-        "main": config["main_branch"],
         "today": datetime.date.today().isoformat(),
-        "toc_cmd": f"{script_command(config['python'])} toc",
-        "check_cmd": f"{script_command(config['python'])} toc --check",
+        "check_cmd": f"{toc_cmd} --check",
     }
     sections = [load_prompt(f"wip-{mode}" if mode else "wip", **values)]
-    if mode == "cleanup":
-        sections.append(git_state_section(cdb, config))
-    sections.append(wip_section(cdb, config, WIP_LISTED, show_empty=True))
+    if mode == "maintain":
+        sections.extend(plan_check_sections(cdb, config))
+    else:
+        sections.append(wip_section(cdb, config, WIP_LISTED, show_empty=True))
     if mode != "list":
         sections.append(load_prompt("wip-format", **values))
-    if mode in ("", "cleanup"):
+    if mode in ("", "maintain"):
         sections.append(load_prompt("not-a-mirror"))
         sections.append(load_prompt("keep-small"))
         sections.append(navigate_section(config))
@@ -1876,7 +1877,6 @@ def wants_setup(args):
         or args.main_branch
         or args.usage_folder
         or args.global_context
-        or args.use_global_context
         or args.local
     )
 
@@ -1897,7 +1897,6 @@ def cmd_setup(args):
         ("main_branch", args.main_branch),
         ("usage_folders", " ".join(args.usage_folder or [])),
         ("global_context", " ".join(args.global_context or [])),
-        ("use_global_context", args.use_global_context),
     ):
         if value:
             config[key] = value
@@ -1918,8 +1917,6 @@ def cmd_setup(args):
                     "Error: --local takes KEY=VALUE, where KEY is one of "
                     f"{', '.join(SETTINGS_KEYS)}."
                 )
-            if key == "use_global_context":
-                check_switch(key, value, "--local")
             local[key] = value
 
     os.makedirs(conf_dir(cdb), exist_ok=True)
@@ -2047,8 +2044,9 @@ def build_parser():
     parser = argparse.ArgumentParser(
         prog="context-db",
         description="A Markdown knowledge base for coding agents, in Open Knowledge Format.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.epilog = text(SHOW_CONTEXT_HELP)
+    parser.epilog = API.strip("\n")
     parser.add_argument(
         "--version", action="version", version=f"context-db {VERSION} (OKF {OKF_VERSION})"
     )
@@ -2069,26 +2067,9 @@ def build_parser():
         )
         return sub
 
-    p = command("prompt")
-    p.add_argument(
-        "--wip",
-        action="store_true",
-        help="Pick up the work in progress: start from its plans. With no task, "
-        "say where the work stands",
-    )
-    p.add_argument(
-        "--use-global-context",
-        action="store_true",
-        help="Also list the folders the global_context setting matches, "
-        "when use_global_context is false",
-    )
+    command("prompt")
 
     p = command("update")
-    p.add_argument(
-        "--usage",
-        action="store_true",
-        help="Write the usage folders instead: what other projects need to know to use this one",
-    )
     p.add_argument(
         "--commit",
         action="store_true",
@@ -2102,7 +2083,7 @@ def build_parser():
         "--list", action="store_true", help="Show what is in progress; change nothing"
     )
     modes.add_argument(
-        "--cleanup",
+        "--maintain",
         action="store_true",
         help="Check every plan against git and delete those whose work has landed",
     )
@@ -2114,7 +2095,7 @@ def build_parser():
     )
     setting.add_argument("--project", help="Project name; its folder is context-db/<name>-project/")
     setting.add_argument("--python", help="Command that runs this script (Python 3.8 or newer)")
-    setting.add_argument("--main-branch", help="Branch that wip --cleanup compares against")
+    setting.add_argument("--main-branch", help="Branch that the plans are checked against")
     setting.add_argument(
         "--usage-folder",
         action="append",
@@ -2130,29 +2111,13 @@ def build_parser():
         "outside context-db/; quote it (repeatable)",
     )
     setting.add_argument(
-        "--use-global-context",
-        choices=SWITCH_VALUES,
-        help="Whether every prompt lists those folders (true), "
-        "or only prompt --use-global-context (false)",
-    )
-    setting.add_argument(
         "--local",
         action="append",
         metavar="KEY=VALUE",
         help=f"Per-user override, written to {LOCAL_SETTINGS_NAME} (repeatable)",
     )
 
-    p = command("maintain")
-    p.add_argument(
-        "--usage",
-        action="store_true",
-        help="Tidy the usage folders instead: what other projects need to know to use this one",
-    )
-    p.add_argument(
-        "--use-git-diff",
-        action="store_true",
-        help="Also list each note against the commits made to the project since it changed",
-    )
+    command("maintain")
 
     # Left out of --help on purpose (no help= keyword): the agent runs it, and CI.
     p = subs.add_parser(

@@ -79,8 +79,8 @@ Running it again is safe. It never overwrites a file that already exists.
 
 Five files in `context-db/configuration/` control how the agent behaves:
 `ON_PROMPT.md`, `ON_UPDATE.md`, `ON_WIP.md`, `ON_CONFIGURE.md`, and
-`ON_MAINTAIN.md`. Whatever a
-file says is added to the agent's instructions every time that command runs.
+`ON_MAINTAIN.md`. Whatever a file says is added to the agent's instructions
+every time that command runs.
 
 Open them and edit them by hand. They are plain Markdown, and the agent reads
 exactly what they say. `/context-db configure` is a helper that wrote the first
@@ -125,17 +125,24 @@ After it:
 That is the whole loop: `prompt`, work for as many turns as it takes, `update
 --push`. `--push` is optional: `--commit` commits and does not push, and with
 neither the commit is left to you. For work that runs over several sessions,
-you can also keep a plan with `/context-db wip`; it is optional. `prompt
---wip` then starts the next session from the plan, and `update` keeps it up to
-date. Run
-`/context-db maintain` now and then to cut the knowledge base back to what is
-still needed. [Commands](commands.md) explains all five.
+you can also keep a plan with `/context-db wip`; it is optional. `prompt` then
+starts the next session on that work from the plan, and `update` keeps it up
+to date. Run `/context-db maintain` rarely, as a spring cleaning, to cut the
+knowledge base back to what is still needed. [Commands](commands.md) explains
+all five.
+
+Each command is a starting point. It covers the whole knowledge base, and
+there are no flags to narrow it. When you want something narrower or
+different, say so in plain words after the command.
+[A command is a starting point](commands.md#a-command-is-a-starting-point)
+has examples.
 
 That loop keeps your project knowledge, which is for agents working on your
-project. If other projects use yours, `/context-db update --usage` writes down
-your usage knowledge: the few things their agents need in order to use it, in
-a [usage folder](layout.md#usage-folders) that those projects read. To read
-the usage folder of a project that yours uses, see
+project. If other projects use yours, tell `update` to start a
+[usage folder](layout.md#usage-folders). It holds your usage knowledge: the
+few things their agents need in order to use your project. From then on
+`update` and `maintain` look after it as well. To read the usage folder of a
+project that yours uses, see
 [How another project reads it](layout.md#how-another-project-reads-it).
 
 ## Settings
@@ -155,15 +162,14 @@ main_branch: main
 | --- | --- |
 | `project` | The project's name. The project folder is `context-db/<project>-project/`. |
 | `python` | The command the agent uses to run the script. |
-| `main_branch` | The branch that `wip --cleanup` compares your current branch against. |
+| `main_branch` | The branch that `wip --maintain` and `maintain` check the plans in `wip/` against. |
 
-Three more settings are optional.
+Two more settings are optional.
 
 | Setting | Meaning |
 | --- | --- |
 | `usage_folders` | Where your [usage folders](layout.md#usage-folders) are kept, as paths from the top of your repository, such as `okf/acme-payments-usage`. `{project}` in a path stands for the project name, and several paths are separated by spaces. Left out, there is one: `<project>-usage/` inside the project folder. |
-| `global_context` | Glob patterns that match knowledge folders outside `context-db/`, such as `../*/okf/*-usage`. They are read from the top of your repository, and several are separated by spaces. [Global context](layout.md#global-context) explains them. |
-| `use_global_context` | `true`, or left out: every `prompt` lists those folders. `false`: only `/context-db prompt --use-global-context` does. |
+| `global_context` | Glob patterns that match knowledge folders outside `context-db/`, such as `../*/okf/*-usage`. They are read from the top of your repository, and several are separated by spaces. `prompt` lists the folders they match. [Global context](layout.md#global-context) explains them. |
 
 Edit them by hand. Anything below the `---` lines is yours for notes.
 

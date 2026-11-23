@@ -1,7 +1,7 @@
 # Context-db Update
 
 Decide first whether the knowledge base needs to change at all. Think back
-over this session, for three things:
+over this session, for these things:
 
 - What you learned that the next agent would get wrong, or miss, without it:
   corrections the user made, conventions, pitfalls, decisions and the reasons
@@ -9,11 +9,14 @@ over this session, for three things:
 - What the notes you read turned out to be: one that is out of date, one that
   sent you the wrong way, one that says only what the code shows.
 - Whether a plan in `{wip_dir}/` that this session worked from still says
-  where the work stands.
+  where the work stands.{usage_thought}
 
 If there is none of these, {nothing_to_add}.
 
 Most sessions change nothing. That is the normal outcome, not a failure.
+
+If there is a user instruction at the end of this output, follow it. It may
+say what to record, or narrow or widen where you look.
 
 When there is something, change only what it needs: the one or two files the
 lesson belongs in, and the notes that turned out wrong or not needed, which
@@ -47,15 +50,13 @@ Some things have a home of their own, and do not go in the main tree:
   session worked from, and its line in `wip.md`, up to date, and delete both
   once the work is finished. `/context-db wip` handles the other plans.
 - Usage knowledge, which is what agents in other projects need to know to use
-  this one: a usage folder ({usage_list}), which `/context-db update --usage`
-  writes. Say so in one line and suggest that command.
-- What must be seen on every run: an ON file in `{conf_dir}/`, the one place
-  outside the project folder that you may write to. Each line there costs
-  tokens on every run of its command, so ask the user first.
+  this one: {usage_home}
+- What must be seen on every run: an ON file in `{conf_dir}/`. Each line
+  there costs tokens on every run of its command, so ask the user first.
 
-If you learned something that anyone using another project would need, it
-belongs in that project's own usage folder as well. Tell the user in one line
-what that folder should say.
+If you learned something about using a project that this one depends on, it
+belongs in that project's own usage folder, which you cannot write. Tell the
+user in one line what that folder should say.
 
 Context-db is the project's memory. Do not also save this to an auto-memory or
 any vendor-specific memory file.
@@ -67,8 +68,8 @@ that agent would not miss. Then run:
 
     {check_cmd}
 
-It checks the format of the whole project folder. Fix what your change caused,
-and run it again until that is clean. If it reports problems in files you did
+It checks the format of the project folder and of every usage folder. Fix what
+your change caused, and run it again until that is clean. If it reports problems in files you did
 not touch, leave them, and mention them in one line with a suggestion to run
 `/context-db maintain`.
 

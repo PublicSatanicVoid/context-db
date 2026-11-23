@@ -527,12 +527,12 @@ SHOWN = re.compile(
         ("prompt", "the task"),
         ("prompt",),
         ("update", "note this", "--push"),
-        ("update", "--usage"),
         ("wip",),
         ("wip", "--list"),
-        ("wip", "--cleanup"),
+        ("wip", "--maintain"),
+        ("wip", "--clear"),
         ("configure",),
-        ("maintain", "--use-git-diff"),
+        ("maintain",),
     ],
 )
 def test_show_context_wraps_the_very_same_message_for_the_user_to_read(project, args):
@@ -558,7 +558,6 @@ def test_show_context_refuses_setting_flags_and_writes_nothing(tmp_path):
     assert "--show-context shows the message a command sends" in result.stdout
     assert not (tmp_path / "context-db").exists()
     assert run(tmp_path, "toc", "--show-context").returncode != 0  # toc has no such flag
-    assert "Add --show-context to any command" in run(REPO, "--help").stdout
     for command in USER_COMMANDS:
         assert "--show-context" in run(REPO, command, "--help").stdout
 
@@ -609,11 +608,11 @@ def sections_sent(output):
 
 
 EVERY_SECTION = {  # the flags that make each command send every section it can
-    "prompt": ("--use-global-context",),
+    "prompt": (),
     "update": ("--push",),
     "wip": (),
     "configure": (),
-    "maintain": ("--use-git-diff",),
+    "maintain": (),
 }
 
 
@@ -639,18 +638,63 @@ def test_the_docs_list_the_sections_each_command_sends(example):
                 assert on_file == f"ON_{name.upper()}{local}.md"
 
 
-@pytest.mark.parametrize("command", ["update", "maintain"])
-def test_the_usage_form_sends_the_same_sections_under_its_own_instructions(example, command):
-    """docs/commands.md says so below the table of each of the two commands."""
-    flags = EVERY_SECTION[command]
-    plain = sections_sent(run(example, command, "the task", *flags).stdout)
-    usage = sections_sent(run(example, command, "the task", "--usage", *flags).stdout)
-    prompt_file = SCRIPT.parent / "prompts" / f"{command}-usage.md"
-    heading = prompt_file.read_text(encoding="utf-8").split("\n")[0]
-    assert usage == [heading] + plain[1:]
+def test_help_readme_and_docs_home_show_the_whole_api():
+    """One block holds everything the user types. --help prints it; the front pages repeat it."""
+    api = context_db.API.strip("\n")
+    assert api in run(REPO, "--help").stdout
+    for path in (REPO / "README.md", REPO / "docs" / "index.md"):
+        page = path.read_text(encoding="utf-8")
+        assert f"```text\n{api}\n```" in page, path
+        assert "Each command is a starting point." in page, path
+    typed = re.findall(r"(?m)^  /context-db (\w+)", api)
+    assert set(typed) == set(USER_COMMANDS)
+    for command in USER_COMMANDS:
+        usage = run(REPO, command, "--help").stdout.split("\n\n")[0]
+        flags = set(re.findall(r"--[\w-]+", usage))
+        assert "--show-context" in flags, command
+        if command != "configure":  # its setting flags are for the agent, and --help lists them
+            assert all(flag in api for flag in flags), (command, flags)
+    commands = (REPO / "docs" / "commands.md").read_text(encoding="utf-8")
+    assert "## A command is a starting point" in commands
+
+
+def test_prompt_update_and_maintain_take_no_flag_that_narrows_them(project):
+    """Each covers the whole knowledge base. The user narrows it in words, in the instruction."""
+    allowed = {"prompt": set(), "update": {"--commit", "--push"}, "maintain": set()}
+    for command, flags in allowed.items():
+        usage = run(REPO, command, "--help").stdout.split("\n\n")[0]
+        assert set(re.findall(r"--[\w-]+", usage)) - {"--show-context"} == flags, command
+        for gone in ("--wip", "--usage", "--use-git-diff", "--use-global-context"):
+            result = run(project, command, "x", gone)
+            assert result.returncode != 0 and "unrecognized arguments" in result.stdout, gone
+    update = " ".join(run(project, "update", "only the usage folder").stdout.split())
+    assert "If there is a user instruction at the end of this output, follow it." in update
+    assert "It may say what to record, or narrow or widen where you look." in update
+    maintain = " ".join(run(project, "maintain").stdout.split())
+    assert "With a folder or a topic, look only there." in maintain
+
+
+def test_sections_about_plans_and_usage_folders_are_sent_only_when_there_are_any(project):
+    """docs/commands.md marks those rows "Only when"."""
+    plans = ["# How to Check the Plans", "# Git State", "# Work In Progress"]
+    usage = "# How to Check the Usage Folders"
+    bare = sections_sent(run(project, "maintain").stdout)
+    assert not set(plans + [usage]) & set(bare)
+    assert "# Usage Knowledge" not in sections_sent(run(project, "update").stdout)
+    add_plan(project)
+    usage_folder(project / "context-db" / "demo-project" / "demo-usage")
+    cut = bare.index("# Folders") + 1
+    assert (
+        sections_sent(run(project, "maintain").stdout) == bare[:cut] + plans + [usage] + bare[cut:]
+    )
+    sent = sections_sent(run(project, "update").stdout)
+    assert sent[:2] == ["# Context-db Update", "# Usage Knowledge"]
     page = (REPO / "docs" / "commands.md").read_text(encoding="utf-8")
-    page = " ".join(page.split("## How it all fits together")[1].split())
-    assert f"the first section is `{heading}` instead, from `prompts/{command}-usage.md`" in page
+    page = page.split("## How it all fits together")[1]
+    table = page.split("`/context-db maintain` sends:")[1]
+    for heading in plans + [usage]:
+        assert re.search(rf"(?m)^\| `{heading}` \| .*Only when .* \|$", table), heading
+    assert re.search(r"(?m)^\| `# Usage Knowledge` \| .*Only when .* \|$", page)
 
 
 def test_the_docs_show_a_real_prompt_message(example):
@@ -714,29 +758,24 @@ def test_broken_settings_are_reported_cleanly(project):
     assert "has no python, main_branch" in result.stdout
 
 
-def test_no_placeholder_is_left_unfilled(example):
+def test_no_placeholder_is_left_unfilled(example, project):
     for args in (
         ("prompt", "x"),
-        ("prompt", "x", "--use-global-context"),
-        ("prompt", "x", "--wip"),
-        ("prompt", "--wip"),
         ("prompt", "x", "--show-context"),
         ("update",),
         ("update", "x", "--push"),
-        ("update", "--usage"),
-        ("update", "x", "--usage", "--push"),
         ("wip", "x"),
         ("wip", "--list"),
-        ("wip", "--cleanup"),
+        ("wip", "--maintain"),
         ("wip", "--clear"),
         ("maintain",),
         ("maintain", "data-model"),
-        ("maintain", "--use-git-diff"),
-        ("maintain", "--usage"),
         ("configure",),
     ):
         out = run(example, *args).stdout
         assert not re.findall(r"\{[a-z_]+\}", out), args
+        if args[0] in ("update", "maintain"):  # and in a project with no usage folder or plan
+            assert not re.findall(r"\{[a-z_]+\}", run(project, *args).stdout), args
 
 
 def test_an_unquoted_instruction_is_joined(project):
@@ -748,7 +787,7 @@ def test_an_unquoted_instruction_is_joined(project):
 
 def test_output_survives_an_ascii_only_stdout(project):
     env = dict(os.environ, PYTHONIOENCODING="ascii", PYTHONUTF8="0")
-    for args in (("prompt", "x"), ("update",), ("wip",), ("wip", "--cleanup"), ("configure",)):
+    for args in (("prompt", "x"), ("update",), ("wip",), ("wip", "--maintain"), ("configure",)):
         result = subprocess.run(
             [sys.executable, str(SCRIPT), *args],
             check=False,
@@ -809,41 +848,14 @@ def test_prompt_lists_folders_and_wip_then_rules_then_instruction(example):
     assert "<!--" not in out
 
 
-def test_prompt_wip_starts_from_the_plans(example):
-    plain = run(example, "prompt", "finish the refund endpoint").stdout
-    out = run(example, "prompt", "--wip", "finish the refund endpoint").stdout
+def test_prompt_starts_from_the_plans_that_bear_on_the_task(example):
+    """No flag for picking work up: the list of plans is on every prompt, and the task names it."""
+    out = run(example, "prompt", "carry on with the refund endpoint").stdout
     wip = " ".join(out.split("# Work In Progress")[1].split("# Folders")[0].split())
-    assert "This task picks up work in progress" in wip
-    assert "Before anything else, read in full the plans it is about" in wip
-    assert "go on from where they say the work stands" in wip
+    assert "Open the plans that bear on the instruction before anything else." in wip
     assert "- [Refund endpoint](refund-endpoint.md). Started 2026-11-03" in wip
-    assert "no task yet" not in wip
-    # The flag changes that one section and nothing else.
-    assert plain.split("# Work In Progress")[0] == out.split("# Work In Progress")[0]
-    assert plain.split("# Folders")[1] == out.split("# Folders")[1]
-    assert "This task picks up" not in plain
-
-
-def test_prompt_wip_with_no_task_reports_where_the_work_stands(example):
-    out = run(example, "prompt", "--wip").stdout
-    wip = " ".join(out.split("# Work In Progress")[1].split("# Folders")[0].split())
-    assert "has given no task yet" in wip
-    assert "tell the user where the work stands and what comes next, and wait." in wip
-    assert "Their answer is the instruction: look into the folders for it then." in wip
-    assert "- [Refund endpoint](refund-endpoint.md)." in wip
-    assert "# Folders" in out and "# User Instruction" not in out
-
-
-def test_prompt_wip_says_so_when_nothing_is_in_progress(project):
-    out = " ".join(run(project, "prompt", "--wip", "x").stdout.split())
-    section = out.split("# Work In Progress")[1].split("# Folders")[0]
-    assert "lists no work in progress, so there is none to pick up" in section
-    assert "Tell the user in one line." in section
-    assert out.endswith("# User Instruction x")
-    bare = " ".join(run(project, "prompt", "--wip").stdout.split())
-    assert "there is none to pick up" in bare
-    assert bare.endswith("Ask the user what they want to work on.")
-    assert "# Folders" not in bare
+    start = " ".join(out.split("# How to Navigate")[0].split())
+    assert "start with the plans it lists that bear on the instruction" in start
 
 
 def test_prompt_leaves_out_an_empty_wip_list(project):
@@ -936,32 +948,27 @@ def test_global_context_patterns_are_read_from_the_repository_root(workspace):
     assert "- **Global folder** `../../../ledger/okc/ledger-usage.okf/`: How to" in out
 
 
-def test_use_global_context_false_lists_them_only_when_asked(workspace):
-    assert run(workspace, "configure", "--use-global-context", "false").returncode == 0
-    conf = workspace / "context-db" / "configuration"
-    assert "\nuse_global_context: false\n---\n" in (conf / "settings.md").read_text()
-    assert "# Global Context" not in run(workspace, "prompt", "x").stdout
-    asked = run(workspace, "prompt", "x", "--use-global-context").stdout
-    assert "`../ledger/okc/ledger-usage.okf/`" in global_context(asked)
-    assert asked.rstrip().endswith("# User Instruction\n\nx")
-    # One user turns it back on for every prompt of their own.
-    assert run(workspace, "configure", "--local", "use_global_context=true").returncode == 0
-    assert "use_global_context: true" in (conf / "settings.local.md").read_text()
-    assert "`../ledger/okc/ledger-usage.okf/`" in run(workspace, "prompt", "x").stdout
-
-
-def test_asking_for_global_context_says_so_when_there_is_none(project):
-    assert "# Global Context" not in run(project, "prompt", "x").stdout
-    asked = " ".join(
-        global_context(run(project, "prompt", "x", "--use-global-context").stdout).split()
+def test_global_context_has_no_switch(workspace):
+    """Patterns that are set are listed on every prompt. To stop that, take the patterns out."""
+    assert "`../ledger/okc/ledger-usage.okf/`" in global_context(
+        run(workspace, "prompt", "x").stdout
     )
-    assert "`context-db/configuration/settings.md` has no `global_context` line" in asked
+    assert run(workspace, "configure", "--use-global-context", "false").returncode != 0
+    assert run(workspace, "configure", "--local", "use_global_context=false").returncode != 0
+    assert "use-global-context" not in run(REPO, "configure", "--help").stdout
+    settings = workspace / "context-db" / "configuration" / "settings.md"
+    settings.write_text(
+        settings.read_text().replace("---\n\n", "use_global_context: false\n---\n\n", 1)
+    )
+    result = run(workspace, "prompt", "x")
+    assert result.returncode != 0
+    assert "a setting that context-db does not know: `use_global_context`" in result.stdout
+
+
+def test_prompt_says_nothing_about_global_context_when_there_is_none(project):
+    assert "# Global Context" not in run(project, "prompt", "x").stdout
     assert run(project, "configure", "--local", "global_context=../nowhere/*.okf").returncode == 0
     assert "# Global Context" not in run(project, "prompt", "x").stdout
-    asked = " ".join(
-        global_context(run(project, "prompt", "x", "--use-global-context").stdout).split()
-    )
-    assert "is `../nowhere/*.okf`, and that matches no folder from `./`" in asked
 
 
 def test_global_context_leaves_out_what_context_db_already_holds(workspace):
@@ -994,29 +1001,14 @@ def test_global_context_leaves_out_what_context_db_already_holds(workspace):
     assert out.count("acme-project/`") == 1
 
 
-def test_a_use_global_context_that_is_not_true_or_false_is_reported(workspace):
-    settings = workspace / "context-db" / "configuration" / "settings.md"
-    settings.write_text(
-        settings.read_text().replace("---\n\n", "use_global_context: sometimes\n---\n\n", 1)
-    )
-    result = run(workspace, "prompt", "x")
-    assert result.returncode != 0
-    assert (
-        "`use_global_context` in context-db/configuration/settings.md must be true or false"
-        in result.stdout
-    )
-    assert "not `sometimes`" in result.stdout and "Traceback" not in result.stdout
-    assert run(workspace, "configure", "--use-global-context", "sometimes").returncode != 0
-    assert run(workspace, "configure").returncode == 0  # configure still runs, to repair it
-
-
 def test_configure_reports_and_asks_about_global_context(workspace, project):
     out = run(workspace, "configure").stdout
     assert (
         f"- Global context: `global_context: {USAGE_NOTES}` matches "
         "`../billing/okc/billing-usage.okf/`, `../ledger/okc/ledger-usage.okf/`" in out
     )
-    assert " configure --global-context '<pattern>' --use-global-context <true or false>" in out
+    assert " configure --global-context '<pattern>'\n" in out
+    assert "use-global-context" not in out
     out = " ".join(run(project, "configure").stdout.split())
     assert "- Global context: no `global_context` setting" in out
     assert "Should `prompt` also list knowledge folders that are kept outside" in out
@@ -1097,7 +1089,7 @@ def test_update_brings_the_plan_the_session_worked_from_up_to_date(project):
     """No flag for it: a session that worked from a plan leaves it true, in two short places."""
     out = " ".join(run(project, "update").stdout.split())
     gate = out.split("## What belongs")[0]
-    assert "for three things:" in gate
+    assert "for these things:" in gate
     assert (
         "Whether a plan in `context-db/demo-project/wip/` that this session worked from still "
         "says where the work stands." in gate
@@ -1116,9 +1108,9 @@ def test_update_names_the_home_of_what_does_not_go_in_the_main_tree(project):
     out = " ".join(run(project, "update").stdout.split())
     homes = out.split("Some things have a home of their own")[1].split("## Finish")[0]
     assert "`/context-db wip` handles the other plans." in homes
-    assert "which `/context-db update --usage` writes" in homes
+    assert "a usage folder, which this project does not have yet." in homes
     assert "an ON file in `context-db/configuration/`" in homes and "ask the user first" in homes
-    assert "it belongs in that project's own usage folder as well" in homes
+    assert "it belongs in that project's own usage folder, which you cannot write" in homes
 
 
 def test_update_carries_the_split_as_you_go_rule(project):
@@ -1264,7 +1256,7 @@ def test_printed_commands_use_the_local_interpreter_override(project):
 
 
 def usage_folder(folder, description="How to call demo from another project"):
-    """A usage folder the way `update --usage` leaves it: a descriptor and one note."""
+    """A usage folder the way `update` leaves it: a descriptor and one note."""
     write(folder / f"{folder.name}.md", f"---\ntype: Folder\ndescription: {description}\n---\n")
     write(folder / "calling.md", doc("Rule", "What every caller must do"))
     return folder
@@ -1274,14 +1266,25 @@ def folder_lines(out):
     return out.split("# Folders")[1].split("\n# ")[0]
 
 
-def test_update_usage_writes_the_usage_folder_and_keeps_the_gate_first(project):
-    out = run(project, "update", "--usage", "callers must send a key").stdout
-    assert out.startswith("# Context-db Update Usage\n\nA usage folder holds usage knowledge: the")
+def test_update_writes_usage_knowledge_once_a_usage_folder_exists(project):
+    """No flag for it. The rules for a usage folder join the message when there is one to write."""
+    none = run(project, "update").stdout
+    assert "# Usage Knowledge" not in none and "**Usage folder**" not in none
+    flat_none = " ".join(none.split())
+    assert "a usage folder, which this project does not have yet." in flat_none
+    assert "Start one only when the user asks for it" in flat_none
+    assert "create its descriptor, `context-db/demo-project/demo-usage/demo-usage.md`" in flat_none
+    assert "context-db.py update` with the same instruction" in flat_none
+    assert "using this project from outside" not in flat_none
+
+    usage_folder(project / "context-db" / "demo-project" / "demo-usage")
+    out = run(project, "update", "callers must send a key").stdout
     marks = (
-        "This project keeps its usage notes here: `context-db/demo-project/demo-usage/`.",
+        "# Context-db Update",
+        "- What this session changed or showed about using this project from outside.",
         "tell the user there is nothing to change and stop",
-        "## What belongs",
-        "## Where it goes",
+        "a usage folder (`context-db/demo-project/demo-usage/`). Usage Knowledge, below",
+        "# Usage Knowledge",
         RULE,
         "# Folders",
         "# File Format",
@@ -1290,51 +1293,63 @@ def test_update_usage_writes_the_usage_folder_and_keeps_the_gate_first(project):
     )
     order = [out.index(mark) for mark in marks]
     assert order == sorted(order)
-    flat_out = " ".join(out.split())
-    assert "the bare minimum that an agent working in another project needs to know" in flat_out
-    assert "Never reprint an API, a schema, a list of commands or flags" in flat_out
-    assert "Project knowledge stays out too" in flat_out
-    assert "which `/context-db update` writes" in flat_out
-    assert "starting with its descriptor, which Folders names" in flat_out
-    assert "context-db.py toc <folder>` first, to see what is already documented" in flat_out
-    assert "The body of the descriptor is the place to say where the project describes" in flat_out
-    assert "write the note all the same: it goes once the project says it" in flat_out
-    assert "the `usage_folders` setting in `context-db/configuration/settings.md`" in flat_out
-    assert "Do not start a usage folder that is not listed." in flat_out
-    assert "cut every line that agent would not miss" in flat_out
-    assert (
-        "- **Usage folder** `context-db/demo-project/demo-usage/` does not exist yet. "
-        "Its descriptor will be `context-db/demo-project/demo-usage/demo-usage.md`." in out
-    )
-    assert "# Context-db Update\n" not in out and "# Commit" not in out
+    usage = " ".join(out.split("# Usage Knowledge")[1].split("\n# ")[0].split())
+    assert "the bare minimum that an agent working in another project needs to know" in usage
+    assert "It lives in a usage folder (`context-db/demo-project/demo-usage/`)" in usage
+    assert "Most sessions change nothing here." in usage
+    assert "Never reprint an API, a schema, a list of commands or flags" in usage
+    assert "What only the code or its comments say does not count as told" in usage
+    assert "Project knowledge stays in the project folder." in usage
+    assert "context-db.py toc <folder>` on a usage folder first" in usage
+    assert "starting with its descriptor, which Folders names" in usage
+    assert "do not start a folder that is not listed" in usage
+    assert 'Call the project by its name, never "this project" or "here".' in usage
     assert out.rstrip().endswith("# User Instruction\n\ncallers must send a key")
-    pushed = run(project, "update", "--usage", "--push").stdout
-    assert "go straight to the Commit section" in pushed
-    assert pushed.index("# File Format") < pushed.index("# Commit")
-    assert "Then push the current branch" in pushed
-
-
-def test_plain_update_and_maintain_leave_the_usage_folder_to_their_usage_forms(project):
-    out = " ".join(run(project, "update").stdout.split())
+    pushed = run(project, "update", "--push").stdout
     assert (
-        "a usage folder (`context-db/demo-project/demo-usage/`), "
-        "which `/context-db update --usage` writes." in out
+        pushed.index("# Usage Knowledge") < pushed.index("# File Format") < pushed.index("# Commit")
     )
-    assert "**Usage folder**" not in out  # not listed until it exists
-    out = " ".join(run(project, "maintain").stdout.split())
-    assert "`/context-db maintain --usage` tidies it." in out
-    assert "Here, fix only what the format check reports in it." in out
-    for command in ("update", "maintain"):
-        assert "--usage" in run(REPO, command, "--help").stdout
+
+
+def test_maintain_covers_the_usage_folders_once_one_exists(project):
+    """No flag for it: the sweep takes in the usage folders, judged for their own reader."""
+    none = run(project, "maintain").stdout
+    assert "# How to Check the Usage Folders" not in none and "**Usage folder**" not in none
+    flat_none = " ".join(none.split())
+    assert (
+        "look at all of it: the project folder, `context-db/demo-project/`, with its plans, "
+        "and the usage folders." in flat_none
+    )
+    assert "And the usage folders, if How to Check the Usage Folders appears below." in flat_none
+    usage_folder(project / "context-db" / "demo-project" / "demo-usage")
+    out = run(project, "maintain", "the calling rules").stdout
+    marks = (
+        "# Context-db Maintain",
+        RULE,
+        "# Git History",
+        "# Folders",
+        "# How to Check the Usage Folders",
+        "# File Format",
+        "# User Instruction",
+    )
+    order = [out.index(mark) for mark in marks]
+    assert order == sorted(order)
+    usage = " ".join(out.split("# How to Check the Usage Folders")[1].split("\n# ")[0].split())
+    assert "The usage folders (`context-db/demo-project/demo-usage/`) hold usage knowledge" in usage
+    assert "one who uses this project and does not read its insides" in usage
+    assert "move it to the project folder" in usage
+    assert "A link that leaves its usage folder becomes a URL" in usage
+    assert "**Wrong** is judged by the project as it is now." in usage
+    assert out.rstrip().endswith("the calling rules")
 
 
 def test_the_usage_folder_is_listed_once_it_exists(project):
     assert "Usage folder" not in folder_lines(run(project, "prompt", "x").stdout)
     usage_folder(project / "context-db" / "demo-project" / "demo-usage")
     line = "- **Usage folder** `context-db/demo-project/demo-usage/`: How to call demo from"
-    for args in (("prompt", "x"), ("update",), ("update", "--usage"), ("maintain",)):
+    for args in (("prompt", "x"), ("update",), ("maintain",)):
         assert line in folder_lines(run(project, *args).stdout), args
-    assert "does not exist yet" not in folder_lines(run(project, "update", "--usage").stdout)
+    assert "does not exist yet" not in folder_lines(run(project, "update").stdout)
     listing = toc(project)
     assert "* [demo-usage](context-db/demo-project/demo-usage/) - How to call demo" in listing
     assert run(project, "toc", "--check").returncode == 0
@@ -1348,24 +1363,21 @@ def test_the_usage_folders_setting_keeps_it_somewhere_else(project):
     assert result.returncode == 0, result.stdout
     settings = (project / "context-db" / "configuration" / "settings.md").read_text()
     assert "main_branch: main\nusage_folders: okf/{project}-usage\n---\n" in settings
-    out = run(project, "update", "--usage").stdout
-    assert "This project keeps its usage notes here: `okf/demo-usage/`." in out
-    assert (
-        "- **Usage folder** `okf/demo-usage/` does not exist yet. "
-        "Its descriptor will be `okf/demo-usage/demo-usage.md`." in out
-    )
+    assert usage_place(project) == "okf/demo-usage/"
     assert "Usage folder" not in folder_lines(run(project, "prompt", "x").stdout)
-    usage_folder(project / "okf" / "demo-usage")
-    for args in (("prompt", "x"), ("update",), ("maintain",), ("maintain", "--usage")):
+    usage = usage_folder(project / "okf" / "demo-usage")
+    for args in (("prompt", "x"), ("update",), ("maintain",)):
         out = run(project, *args).stdout
         assert "- **Usage folder** `okf/demo-usage/`: How to call demo" in folder_lines(out), args
+    assert "It lives in a usage folder (`okf/demo-usage/`)" in " ".join(
+        run(project, "update").stdout.split()
+    )
+    shutil.rmtree(usage)
     # One user keeps theirs elsewhere, and the path is read from the repository root.
     assert run(project, "configure", "--local", "usage_folders=notes/mine").returncode == 0
     subprocess.run(["git", "init", "-q"], cwd=str(project), check=True)
     (project / "src").mkdir()
-    out = run(project / "src", "update", "--usage").stdout
-    assert "This project keeps its usage notes here: `../notes/mine/`." in out
-    assert "Its descriptor will be `../notes/mine/mine.md`." in out
+    assert usage_place(project / "src") == "../notes/mine/"
 
 
 def test_a_project_can_keep_more_than_one_usage_folder(project):
@@ -1376,9 +1388,9 @@ def test_a_project_can_keep_more_than_one_usage_folder(project):
     settings = (project / "context-db" / "configuration" / "settings.md").read_text()
     assert f"usage_folders: {places[0]} {places[1]}\n---\n" in settings
     usage_folder(project / "okf" / "demo-usage", "How to call demo")
-    out = run(project, "update", "--usage").stdout
+    out = run(project, "update").stdout
     both = "`okf/demo-usage/`, `okf/demo-admin-usage/`"
-    assert f"This project keeps its usage notes here: {both}." in out
+    assert f"It lives in a usage folder ({both})" in " ".join(out.split())
     assert "never the same thing in two" in " ".join(out.split())
     assert "- **Usage folder** `okf/demo-usage/`: How to call demo" in folder_lines(out)
     assert (
@@ -1393,8 +1405,8 @@ def test_a_project_can_keep_more_than_one_usage_folder(project):
         "- **Usage folder** `okf/demo-usage/`: How to call demo",
         "- **Usage folder** `okf/demo-admin-usage/`: How to run demo",
     ]
-    out = " ".join(run(project, "maintain", "--usage").stdout.split())
-    assert f"Tidy this project's usage folders ({both}), following" in out
+    out = " ".join(run(project, "maintain").stdout.split())
+    assert f"The usage folders ({both}) hold usage knowledge" in out
     state = run(project, "configure").stdout
     assert (
         f"- Usage folders, from `usage_folders: {places[0]} {places[1]}`: "
@@ -1485,29 +1497,8 @@ def test_a_usage_note_links_only_inside_the_usage_folder(project, place, up):
     assert result.returncode == 0, result.stdout
 
 
-def test_maintain_usage_tidies_the_usage_folder_for_its_own_reader(project):
-    out = run(project, "maintain", "--usage", "the calling rules").stdout
-    assert out.startswith(
-        "# Context-db Maintain Usage\n\n"
-        "Tidy this project's usage folders (`context-db/demo-project/demo-usage/`), following"
-    )
-    flat_out = " ".join(out.split())
-    assert "Check first, change second." in flat_out
-    assert "suggest `/context-db update --usage`, and stop." in flat_out
-    assert "one who uses this project and does not read its insides" in flat_out
-    assert "move it to the project folder, `context-db/demo-project/`" in flat_out
-    assert "context-db.py toc` on each usage folder in scope, and on its subfolders" in flat_out
-    assert "fix what it reports in the usage folders" in flat_out
-    assert "- **Usage folder** `context-db/demo-project/demo-usage/` does not exist yet." in out
-    marks = ("# Context-db Maintain Usage", RULE, "# Folders", "# File Format", "# User Instruct")
-    order = [out.index(mark) for mark in marks]
-    assert order == sorted(order)
-    assert "# Context-db Maintain\n" not in out and "# Git History" not in out
-    assert out.rstrip().endswith("the calling rules")
-
-
 @pytest.mark.parametrize("place", ["context-db/demo-project/demo-usage", "okf/demo-usage"])
-def test_git_history_is_about_the_folder_being_tidied(project, place):
+def test_git_history_covers_the_project_folder_and_the_usage_folders(project, place):
     if not place.startswith("context-db"):
         assert run(project, "configure", "--usage-folder", place).returncode == 0
     usage = usage_folder(project.joinpath(*place.split("/")))
@@ -1524,23 +1515,18 @@ def test_git_history_is_about_the_folder_being_tidied(project, place):
     git(project, "add", "-A")
     git(project, "commit", "-q", "-m", "the code moves on")
 
-    def rows(*flags):
-        out = run(project, "maintain", "--use-git-diff", *flags).stdout
-        history = out.split("# Git History")[1].split("# Folders")[0]
-        assert "every note in the folder you are tidying" in " ".join(history.split())
-        return [line for line in history.splitlines() if line.startswith("- `")]
-
-    own = rows()
-    assert len(own) == 1 and "context-db/demo-project/retry-policy.md`: last changed" in own[0]
-    assert "; 1 commits to the project since" in own[0]  # a change to a usage note is not one
-    theirs = rows("--usage")
-    assert sorted(row.split("`")[1] for row in theirs) == [
-        f"{place}/calling.md",
-        f"{place}/start.md",
-    ]
-    for row in theirs:
-        assert "; 1 commits to the project since" in row
+    out = run(project, "maintain").stdout
+    history = out.split("# Git History")[1].split("# Folders")[0]
+    assert "every note in the project folder and the usage folders" in " ".join(history.split())
+    rows = [line for line in history.splitlines() if line.startswith("- `")]
+    assert sorted(row.split("`")[1] for row in rows) == sorted(
+        ["context-db/demo-project/retry-policy.md", f"{place}/calling.md", f"{place}/start.md"]
+    )
+    for row in rows:
+        assert "; 1 commits to the project since" in row  # a change to a usage note is not one
         assert "linked files" not in row  # a link to another usage note is not a link to the code
+    assert "wip/plan.md" not in history  # a plan is checked against the branch instead
+    assert "# How to Check the Plans" in out and "# Git State" in out
 
 
 # ── maintain ─────────────────────────────────────────────────────────────────
@@ -1572,11 +1558,9 @@ RULE = "# Context-db Is Not a Mirror of the Code"
 SMALL = "# Keep Context-db Small"
 WRITES_NOTES = (
     ("update",),
-    ("update", "--usage"),
     ("maintain",),
-    ("maintain", "--usage"),
     ("wip",),
-    ("wip", "--cleanup"),
+    ("wip", "--maintain"),
 )
 READS_OR_WRITES_NOTES = (("prompt", "x"),) + WRITES_NOTES
 
@@ -1631,7 +1615,7 @@ def test_maintain_enforces_the_rule_against_code_and_comments(project):
     assert "Your main job is to enforce the rule" in out
     assert "open the code it is about, comments included" in out
     assert "do not edit the code yourself" in out
-    assert "# Git History" not in out
+    assert "Git History, below, says which notes the code has moved furthest past" in out
 
 
 def test_maintain_cuts_back_what_is_no_longer_needed_and_shapes_the_rest(project):
@@ -1656,7 +1640,7 @@ def test_maintain_cuts_back_what_is_no_longer_needed_and_shapes_the_rest(project
     assert "Cutting a note down is not deleting it." in out
 
 
-def test_maintain_with_git_diff_ranks_notes_by_how_far_the_code_moved(project):
+def test_maintain_ranks_notes_by_how_far_the_code_moved(project):
     bundle = project / "context-db" / "demo-project"
     write(project / "src" / "retry.py", "DELAY = 1\n")
     write(
@@ -1672,7 +1656,7 @@ def test_maintain_with_git_diff_ranks_notes_by_how_far_the_code_moved(project):
     git(project, "add", "-A")
     git(project, "commit", "-q", "-m", "code moves on")
     write(bundle / "fresh.md", doc("Reference", "New"))
-    out = run(project, "maintain", "--use-git-diff").stdout
+    out = run(project, "maintain").stdout
     history = out.split("# Git History")[1].split("# Folders")[0]
     rows = [line for line in history.splitlines() if line.startswith("- `")]
     assert "retry-policy.md`: last changed" in rows[0]
@@ -1683,8 +1667,10 @@ def test_maintain_with_git_diff_ranks_notes_by_how_far_the_code_moved(project):
     assert out.index(RULE) < out.index("# Git History") < out.index("# Folders")
 
 
-def test_maintain_with_git_diff_outside_git(project):
-    assert "no history to read" in run(project, "maintain", "--use-git-diff").stdout
+def test_maintain_outside_git(project):
+    """Git is the standard for maintain. Without it the agent works from the files alone."""
+    out = " ".join(run(project, "maintain").stdout.split())
+    assert "so there is no history to read. Maintain the knowledge base without it." in out
 
 
 # ── wip ──────────────────────────────────────────────────────────────────────
@@ -1708,7 +1694,7 @@ def test_wip_records_the_current_work(project):
     add_plan(project)
     out = run(project, "wip", "plan the x work").stdout
     flat = " ".join(out.split())
-    assert "It is optional" in flat
+    assert "Record where the work in progress stands" in flat
     assert "today, " + datetime.date.today().isoformat() + ", on `feature/x`" in flat
     assert "- [x-plan](x-plan.md). Started 2026-11-01" in out
     assert "# How Work In Progress Is Kept" in out and "# File Format" in out
@@ -1716,7 +1702,7 @@ def test_wip_records_the_current_work(project):
     assert out.rstrip().endswith("plan the x work")
 
 
-def test_wip_cleanup_shows_git_state_and_the_list(project):
+def test_wip_maintain_shows_git_state_and_the_list(project):
     git(project, "init", "-q", "-b", "main")
     git(project, "add", "-A")
     git(project, "commit", "-q", "-m", "base")
@@ -1725,14 +1711,23 @@ def test_wip_cleanup_shows_git_state_and_the_list(project):
     git(project, "add", "-A")
     git(project, "commit", "-q", "-m", "add src")
     add_plan(project)
-    out = run(project, "wip", "--cleanup").stdout
-    assert "# Context-db Wip Cleanup" in out
+    out = run(project, "wip", "--maintain").stdout
+    assert "# Context-db Wip Maintain" in out
     assert "- Current branch: `feature/x`" in out
     assert "- Main branch: `main`" in out
     assert "Work has landed when it is merged into `main`" in out
     assert "add src" in out and "src.py" in out
     assert "x-plan.md" in out.split("git status --short")[1]
     assert "- [x-plan](x-plan.md)" in out.split("# Work In Progress")[1]
+    marks = ("# Context-db Wip Maintain", "# How to Check the Plans", "# Git State", "# Work In Pr")
+    order = [out.index(mark) for mark in marks]
+    assert order == sorted(order)
+    # `maintain` checks the plans the same way, as part of its sweep.
+    swept = run(project, "maintain").stdout
+    for mark in marks[1:]:
+        assert mark in swept, mark
+    assert "`/context-db wip --maintain` does this part alone." in " ".join(swept.split())
+    assert run(project, "wip", "--cleanup").returncode != 0
 
 
 def test_wip_list_only_shows_the_list(project):
@@ -1766,7 +1761,7 @@ def test_wip_on_the_main_branch_shows_recent_commits(project):
     git(project, "init", "-q", "-b", "main")
     git(project, "add", "-A")
     git(project, "commit", "-q", "-m", "only commit")
-    out = run(project, "wip", "--cleanup").stdout
+    out = run(project, "wip", "--maintain").stdout
     assert "## Recent commits" in out and "only commit" in out
 
 
@@ -1774,14 +1769,14 @@ def test_wip_says_so_when_the_main_branch_does_not_exist(project):
     git(project, "init", "-q", "-b", "trunk")
     git(project, "add", "-A")
     git(project, "commit", "-q", "-m", "base")
-    out = run(project, "wip", "--cleanup").stdout
+    out = run(project, "wip", "--maintain").stdout
     assert "main branch `main` does not exist" in out
     assert "context-db/configuration/settings.md" in out
     assert "base" in out
 
 
 def test_wip_outside_git(project):
-    assert "Not a git repository" in run(project, "wip", "--cleanup").stdout
+    assert "Not a git repository" in run(project, "wip", "--maintain").stdout
 
 
 def test_plans_missing_from_the_list_are_reported(project):
@@ -1921,8 +1916,7 @@ def test_configure_with_settings_rejects_bad_input_without_writing_anything(tmp_
         ("--project", "a/b"),
         ("--project", "demo", "--local", "colour=blue"),
         ("--project", "demo", "--local", "python"),
-        ("--project", "demo", "--local", "use_global_context=sometimes"),
-        ("--project", "demo", "--use-global-context", "sometimes"),
+        ("--project", "demo", "--local", "use_global_context=false"),  # no longer a setting
     ):
         assert run(tmp_path, "configure", *args).returncode != 0
     assert not (tmp_path / "context-db").exists()
@@ -1955,20 +1949,21 @@ def name_settings_files(repo, names, local=False):
 
 
 def usage_place(repo):
-    """Where the usage folder is, as `update --usage` says it."""
-    return run(repo, "update", "--usage").stdout.split("usage notes here: `")[1].split("`")[0]
+    """Where the usage folder is to go, as `update` says it while there is none yet."""
+    out = " ".join(run(repo, "update").stdout.split())
+    descriptor = out.split("create its descriptor, `")[1].split("`")[0]
+    return descriptor.rsplit("/", 1)[0] + "/"
 
 
 def test_a_named_settings_file_overrides_the_file_that_names_it(workspace):
     conf = workspace / "context-db" / "configuration"
     team = workspace.parent / "team" / "context-db.md"
-    settings_file(team, usage_folders="okf/{project}-usage", use_global_context="false")
+    settings_file(team, usage_folders="okf/{project}-usage", global_context="../nowhere/*")
     assert usage_place(workspace) == "context-db/acme-project/acme-usage/"
     assert "# Global Context" in run(workspace, "prompt", "x").stdout
     name_settings_files(workspace, "../team/context-db.md")
     assert usage_place(workspace) == "okf/acme-usage/"
     assert "# Global Context" not in run(workspace, "prompt", "x").stdout
-    assert "# Global Context" in run(workspace, "prompt", "x", "--use-global-context").stdout
 
     # Your own file is read after the team's, and a file it names is read last of all.
     assert run(workspace, "configure", "--local", "usage_folders=mine/acme-usage").returncode == 0
@@ -2056,7 +2051,7 @@ def test_a_key_that_is_not_a_setting_stops_the_commands(workspace):
     said = (
         "Error: context-db/configuration/settings.md has a setting that context-db does not "
         "know: `usage_folder`. The settings are project, python, main_branch, usage_folders, "
-        "global_context, use_global_context, settings_files."
+        "global_context, settings_files."
     )
     for command in ("prompt", "update", "wip", "maintain"):
         result = run(workspace, command, "x")

@@ -10,22 +10,21 @@ Settings for the context-db skills. Edit them by hand whenever you like.
 
 - project: the project folder is context-db/<project>-project/.
 - python: the command that runs the skills' script, Python 3.8 or newer.
-- main_branch: the branch that `/context-db wip --cleanup` compares against.
+- main_branch: the branch that `/context-db wip --maintain` checks the plans
+  against.
 
-Four more are optional. Add them as lines of their own:
+Three more are optional. Add them as lines of their own:
 
 - usage_folders: where the usage folders are kept, as paths from the top of
   the repository, such as okf/{project}-usage. {project} stands for the
   project name, and several paths are separated by spaces. Left out, there is
   one: <project>-usage/ inside the project folder. A usage folder holds what
-  other projects need to know to use this one, and
-  `/context-db update --usage` writes it.
+  other projects need to know to use this one, and `/context-db update`
+  writes it.
 - global_context: glob patterns that match knowledge folders outside
   context-db/, such as ../*/okf/*-usage. They are read from the top of the
   repository, and several are separated by spaces. `/context-db prompt` lists
   the folders they match.
-- use_global_context: false lists those folders only on
-  `/context-db prompt --use-global-context`. Left out, it is true.
 - settings_files: more settings files to read, such as
   ~/.config/context-db/team.md, separated by spaces. Each is read after this
   file and overrides it.
