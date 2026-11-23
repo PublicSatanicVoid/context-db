@@ -74,25 +74,21 @@ comment next to it. Every command repeats this rule to the agent;
 
 ## Usage folders
 
-The project folder holds project knowledge, for agents working on your project.
-A usage folder holds usage knowledge, for agents working in other projects that
-use yours: your docs and API as those agents need them, expressed in OKF
-format. It is written in the same format as the rest of the knowledge base, so
-an agent in a project that uses yours reads it the way it reads its own notes:
-one line of description first, and a file only when the task calls for it.
-Nobody needs context-db to read it, since it is plain OKF Markdown.
+A usage folder holds usage knowledge, for agents working in other projects
+that use yours: your docs and API as those agents need them, expressed in OKF
+format. An agent in a project that uses yours reads it the way it reads its
+own notes, one line of description first and a file only when the task calls
+for it. Nobody needs context-db to read it, since it is plain OKF Markdown.
 
-A usage folder holds the bare minimum such an agent needs to know to use your
-project: where to start, which way in is right for which job, the rules a
-caller must follow that the interface does not enforce, and the mistakes
-callers make.
+It holds the bare minimum: where to start, which way in is right for which
+job, the rules a caller must follow that the interface does not enforce, and
+the mistakes callers make.
 
 It is not a second copy of your docs. A usage note never reprints an API, a
-schema, or a list of flags. Your README, your docs, and the definition of your
-API already say those things, and a copy drifts. The note says where they are
-and adds only what they leave out. Project knowledge stays out as well: why the
-project is built the way it is, and how to change it, belong in the project
-folder.
+schema, or a list of flags, because your README, your docs, and the definition
+of your API already say those things, and a copy drifts. The note says where
+they are and adds only what they leave out. Project knowledge stays out as
+well: it belongs in the project folder.
 
 This is a whole usage note, from the
 [example](https://github.com/cart0113/context-db/tree/v0.1/example) that comes
@@ -138,7 +134,7 @@ To work on the usage folder alone, say so: "Only the usage folder."
 Some teams keep what other projects read apart from the knowledge base. The
 `usage_folders` setting says where the folder is:
 
-```markdown
+```yaml
 ---
 project: acme-payments
 python: python3
@@ -155,10 +151,12 @@ that form in a [settings file that several projects share](setup.md#settings-fro
 
 A project whose users fall into separate groups can keep a usage folder for
 each: one for the services that call its API, say, and one for the people who
-run it. Name them all on the same line, separated by spaces:
+run it. Name them as a list:
 
-```markdown
-usage_folders: okf/acme-payments-usage okf/acme-payments-admin-usage
+```yaml
+usage_folders:
+  - okf/acme-payments-usage
+  - okf/acme-payments-admin-usage
 ```
 
 Each folder stands on its own. It has a description of its own, a project that
@@ -190,15 +188,14 @@ its own. The last belongs to the ledger, a project that it uses:
 - **Global folder** `../acme-ledger-repo/okf/acme-ledger-usage/`: How to use the Acme Ledger from another service — where its API is described, and the posting rules that the API does not enforce (entries that balance, amounts in minor units, never changing a posted entry)
 ```
 
-Reading your usage folder is no harder for that agent than reading its own
-notes. It runs the same `toc` listing on it and opens the same kind of short
-file. It is told to look into a project's usage folder before it reads that
-project's code, whenever a task involves that project. It never changes one.
+That agent reads your usage folder the way it reads its own notes: the same
+`toc` listing, the same kind of short file. It is told to look there before it
+reads your code, whenever a task involves your project, and it never changes
+anything in it.
 
-Its own project knowledge still comes first. The agent starts with its own
-project folder on every task, because what is there applies to everything done
-in its repository. Your usage folder applies only where the task involves your
-project.
+Its own project knowledge still comes first, because that applies to
+everything done in its repository. Your usage folder applies only where the
+task involves your project.
 
 Because the folder is read from wherever it is mounted, a file in it links only
 to files inside the folder. To point at anything else, it gives a URL, or the
@@ -214,26 +211,27 @@ repository. The commands read background folders and never change them.
 
 ## Global context
 
-Some knowledge is better left where it is. A project that other projects use
-keeps a [usage folder](#usage-folders), and each project that needs those
-notes can read them in place, with nothing mounted or copied. context-db calls
-this global context.
+Some knowledge is better left where it is. A project that needs the
+[usage folder](#usage-folders) of another can read it in place, with nothing
+copied or linked. context-db calls this global context.
 
-You say where to look with a setting, `global_context`, in
-`context-db/configuration/settings.md`:
+The `global_context` setting, in `context-db/configuration/settings.md`, says
+where to look:
 
-```markdown
+```yaml
 ---
 project: acme-payments
 python: python3
 main_branch: main
-global_context: okf/*-usage ../*/okf/*-usage
+global_context:
+  - okf/*-usage
+  - ../*/okf/*-usage
 ---
 ```
 
-Each value is a glob pattern that matches the folders themselves. Patterns are
-separated by spaces, and they are read from the top of your repository, wherever
-the command is run from. The first one here matches every folder whose name
+Each value is a glob pattern that matches the folders themselves, read from the
+top of your repository wherever the command is run from. One pattern can go on
+the setting's own line. The first one here matches every folder whose name
 ends in `-usage` inside the `okf/` folder of your own repository. The second
 matches the same in each repository next to yours. A pattern can also start
 with `~` or `/`. For usage folders that are kept in the usual place, the
@@ -263,17 +261,15 @@ laid out is not the way your teammates' machines are.
 
 ## Sharing
 
-Some knowledge is not about one project. Coding standards, how your team uses
-git, and the [usage folder](#usage-folders) of a project that yours uses are
-examples. Keep knowledge like that in one place and mount it into each project
-that needs it.
+Some knowledge is not about one project: coding standards, how your team uses
+git, the [usage folder](#usage-folders) of a project that yours uses. Keep it
+in one place, and copy or symlink it into each project that needs it, as a
+[background folder](#background-folders). `prompt` lists background folders
+next to the project folder.
 
-You mount it as a [background folder](#background-folders). `prompt` lists
-background folders next to the project folder.
-
-Mounting suits a few folders that you choose one by one. To have the agent find
-notes in whatever repositories are checked out next to yours, with no mount,
-use [global context](#global-context).
+That suits a few folders that you choose one by one. To have the agent find
+notes in whatever repositories are checked out next to yours, with nothing
+copied or linked, use [global context](#global-context).
 
 ```text
 context-db/
@@ -434,32 +430,22 @@ in it; otherwise its description is shown one level up.
 
 ### Why there is no index.md
 
-This is a design decision: it is how context-db implements OKF's `index.md`.
+This is how context-db implements OKF's `index.md`: it builds the listing on
+demand and commits nothing.
 
 A generated file that is committed starts drifting from the files it describes
 the moment someone edits a note and forgets to regenerate it. An agent that
 reads a stale index misses notes that exist and looks for notes that are gone.
-Keeping it in step needs a regenerate step after every write, a check in CI,
-and a rule for merge conflicts, which is maintenance that adds nothing to the
-knowledge itself.
+Keeping it in step takes a regenerate step after every write, a check in CI,
+and a rule for merge conflicts.
 
-A listing built on demand cannot drift. It is made from the files each time it
-is asked for, so there is nothing to regenerate, commit, review, or merge, and
-nothing for `update` or `maintain` to keep up to date.
-
-It still does everything OKF's `index.md` is for:
-
-- **Progressive disclosure.** The agent sees what a folder holds, one line per
-  item, before it opens anything, and goes one level deeper only where a
-  description matches.
-- **Descriptions route the reader.** Each line carries the `description` from
-  the file's frontmatter, so the description is still what makes a note
-  findable.
-- **The same layout.** The listing uses OKF's index layout: a `Subfolders` and a
-  `Files` heading, then one `* [Title](path) - description` line per item.
-- **Every folder, every bundle.** It works for the project folder, its
-  subfolders, and every shared background folder, with nothing generated in the
-  repository that owns it.
+A listing built on demand cannot drift, and it still does what an `index.md`
+is for. The agent sees what a folder holds, one line per item with its
+description, before it opens anything, and goes a level deeper only where a
+description matches. The listing uses OKF's own layout: a `Subfolders` and a
+`Files` heading, then one `* [Title](path) - description` line per item. It
+works for every folder, shared background folders included, with nothing
+generated in the repository that owns them.
 
 The one thing it gives up is browsing: on GitHub or in Obsidian you see the
 files without their descriptions. [The OKF page](okf.md#dynamic-indexing) has

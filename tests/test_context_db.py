@@ -959,6 +959,68 @@ def test_global_context_patterns_are_read_from_the_repository_root(workspace):
     assert "- **Global folder** `../../../ledger/okc/ledger-usage.okf/`: How to" in out
 
 
+def test_a_setting_with_several_values_is_a_yaml_list(workspace):
+    """The owner: "Should this not be a list?" One value sits on the line; several are a list."""
+    settings = workspace / "context-db" / "configuration" / "settings.md"
+    one_line = f"global_context: {USAGE_NOTES}\n"
+    assert one_line in settings.read_text()
+    both = [
+        "- **Global folder** `../billing/okc/billing-usage.okf/`: How to call billing",
+        "- **Global folder** `../ledger/okc/ledger-usage.okf/`: How to call the ledger",
+    ]
+    written = (
+        'global_context:\n  - ../billing/okc/*.okf\n  - "../ledger/okc/*.okf"\n',  # under the key
+        "global_context:\n- ../billing/okc/*.okf\n- ../ledger/okc/*.okf\n",  # not indented
+        "global_context: [../billing/okc/*.okf, '../ledger/okc/*.okf']\n",  # in brackets
+    )
+    for form in written:
+        settings.write_text(settings.read_text().split("global_context:")[0] + form + "---\n")
+        out = run(workspace, "prompt", "x").stdout
+        assert [line for line in global_context(out).splitlines() if line.startswith("- ")] == both
+
+    # configure writes several values as a list, and quotes one that YAML would misread.
+    result = run(
+        workspace, "configure", "--global-context", "*/okc/*.okf", "--global-context", "../x/*"
+    )
+    assert result.returncode == 0, result.stdout
+    assert 'global_context:\n  - "*/okc/*.okf"\n  - ../x/*\n---\n' in settings.read_text()
+    assert run(workspace, "prompt", "x").returncode == 0
+
+
+def test_several_values_on_one_line_stop_the_commands(workspace):
+    """The old form. It must not be read as one path with a space in it."""
+    settings = workspace / "context-db" / "configuration" / "settings.md"
+    good = settings.read_text()
+    settings.write_text(good.replace(USAGE_NOTES, "okf/*-usage ../*/okf/*-usage"))
+    said = (
+        "Error: `global_context` in context-db/configuration/settings.md holds several values "
+        "on one line. Write them as a list, one to a line:\n\n"
+        "global_context:\n  - okf/*-usage\n  - ../*/okf/*-usage\n"
+    )
+    for command in ("prompt", "update", "wip", "maintain"):
+        result = run(workspace, command, "x")
+        assert result.returncode != 0 and said in result.stdout, command
+    state = run(workspace, "configure").stdout
+    assert "Several values on one line, which must be a list, so the other commands" in state
+    assert "stop on it: `global_context`" in state
+    result = run(workspace, "configure", "--usage-folder", "okf/a okf/b")
+    assert result.returncode != 0 and "holds several values on one line" in result.stdout
+    settings.write_text(good)
+    result = run(workspace, "configure", "--usage-folder", "okf/a okf/b")
+    assert result.returncode != 0 and "usage_folders:\n  - okf/a\n  - okf/b" in result.stdout
+    result = run(
+        workspace,
+        "configure",
+        "--local",
+        "global_context=../a/*",
+        "--local",
+        "global_context=../b/*",
+    )
+    assert result.returncode == 0, result.stdout
+    local = (workspace / "context-db" / "configuration" / "settings.local.md").read_text()
+    assert "global_context:\n  - ../a/*\n  - ../b/*\n---\n" in local
+
+
 def test_global_context_has_no_switch(workspace):
     """Patterns that are set are listed on every prompt. To stop that, take the patterns out."""
     assert "`../ledger/okc/ledger-usage.okf/`" in global_context(
@@ -1000,7 +1062,7 @@ def test_global_context_leaves_out_what_context_db_already_holds(workspace):
     )
     assert result.returncode == 0, result.stdout
     settings = (cdb / "configuration" / "settings.md").read_text()
-    assert f"global_context: ../*/context-db/*-project {USAGE_NOTES}\n" in settings
+    assert f"global_context:\n  - ../*/context-db/*-project\n  - {USAGE_NOTES}\n" in settings
     out = run(workspace, "prompt", "x").stdout
     listed = [line for line in global_context(out).splitlines() if line.startswith("- ")]
     assert listed == [
@@ -1042,7 +1104,7 @@ def test_global_context_finds_usage_folders_inside_this_repository_and_next_to_i
     assert result.returncode == 0, result.stdout
     settings = (workspace / "context-db" / "configuration" / "settings.md").read_text()
     assert "usage_folders: okf/{project}-usage\n" in settings
-    assert "global_context: okf/*-usage ../*/okf/*-usage\n" in settings
+    assert "global_context:\n  - okf/*-usage\n  - ../*/okf/*-usage\n" in settings
     usage_folder(workspace / "okf" / "acme-usage", "How to call acme")
     usage_folder(workspace / "okf" / "vendored-usage", "A copy kept in this repository")
     usage_folder(workspace.parent / "ledger" / "okf" / "ledger-usage", "How to call the ledger")
@@ -1400,7 +1462,7 @@ def test_a_project_can_keep_more_than_one_usage_folder(project):
     result = run(project, "configure", "--usage-folder", places[0], "--usage-folder", places[1])
     assert result.returncode == 0, result.stdout
     settings = (project / "context-db" / "configuration" / "settings.md").read_text()
-    assert f"usage_folders: {places[0]} {places[1]}\n---\n" in settings
+    assert f"usage_folders:\n  - {places[0]}\n  - {places[1]}\n---\n" in settings
     usage_folder(project / "okf" / "demo-usage", "How to call demo")
     out = run(project, "update").stdout
     both = "`okf/demo-usage/`, `okf/demo-admin-usage/`"
@@ -1948,8 +2010,13 @@ def test_configure_with_settings_catches_a_project_name_given_with_its_suffix(tm
 
 
 def settings_file(path, **values):
-    """A settings file kept outside the project, written by hand."""
-    header = "".join(f"{key}: {value}\n" for key, value in values.items())
+    """A settings file kept outside the project, written by hand. A list becomes a YAML list."""
+    header = "".join(
+        f"{key}:\n" + "".join(f"  - {item}\n" for item in value)
+        if isinstance(value, list)
+        else f"{key}: {value}\n"
+        for key, value in values.items()
+    )
     write(path, f"---\n{header}---\n\nShared by every project of the team.\n")
     return path
 
@@ -2033,7 +2100,9 @@ def test_a_named_settings_file_that_cannot_be_read_stops_every_command_but_confi
 def test_settings_files_can_name_more_and_cannot_loop(workspace):
     one, two = workspace.parent / "one.md", workspace.parent / "two.md"
     settings_file(one, usage_folders="one/{project}-usage", settings_files="../two.md")
-    settings_file(two, usage_folders="two/{project}-usage", settings_files="../one.md ../two.md")
+    settings_file(
+        two, usage_folders="two/{project}-usage", settings_files=["../one.md", "../two.md"]
+    )
     name_settings_files(workspace, "../one.md")
     assert usage_place(workspace) == "two/acme-usage/"  # read after the file that names it
     state = run(workspace, "configure").stdout.split("# Detected State")[1]

@@ -100,17 +100,21 @@ SETTINGS_NAME = "settings.md"
 LOCAL_SETTINGS_NAME = "settings.local.md"
 LOCAL_GLOB = "*.local.md"  # every per-user file in configuration/; gitignored
 REQUIRED_SETTINGS = ("project", "python", "main_branch")
-# usage_folders: where the usage folders are kept, as paths separated by spaces
-# and read from the repository root; {project} in one stands for the project
-# name. Left out, there is one: <project>-usage inside the project folder.
-# global_context: glob patterns, separated by spaces and read from the repository
-# root, that match knowledge folders outside context-db/. `prompt` lists them.
+# usage_folders: where the usage folders are kept, as paths read from the
+# repository root; {project} in one stands for the project name. Left out,
+# there is one: <project>-usage inside the project folder.
+# global_context: glob patterns, read from the repository root, that match
+# knowledge folders outside context-db/. `prompt` lists them.
 OPTIONAL_SETTINGS = ("usage_folders", "global_context")
 SETTINGS_KEYS = REQUIRED_SETTINGS + OPTIONAL_SETTINGS
-# The line on which a settings file names more settings files, separated by
-# spaces and read from the repository root. Each is read after the file that
-# names it and overrides it. It is written by hand: no command sets it.
+# The setting with which a settings file names more settings files, as paths
+# read from the repository root. Each is read after the file that names it and
+# overrides it. It is written by hand: no command sets it.
 SETTINGS_FILES = "settings_files"
+# These three hold a list: one value on the key's line, or a YAML list. Several
+# values on one line are refused, so a value cannot contain a space.
+LIST_SETTINGS = OPTIONAL_SETTINGS + (SETTINGS_FILES,)
+LIST_SEPARATOR = "\n"  # a list is kept as one string, its items joined by this
 PROJECT_NAME = "{project}"  # stands for the project name in the usage_folders setting
 WIP_LIST_NAME = "wip.md"
 INDEX_NAME = "index.md"
@@ -390,6 +394,13 @@ UNKNOWN_SETTING = """
 Error: {path} has a setting that context-db does not know: {keys}. The settings are {known}. Fix the spelling, or delete the line.
 """
 
+SEVERAL_VALUES_ON_A_LINE = """
+Error: `{key}` in {path} holds several values on one line. Write them as a list, one to a line:
+
+{key}:
+{items}
+"""
+
 PROJECT_DESCRIPTOR = """
 ---
 type: Folder
@@ -429,17 +440,21 @@ Three more are optional. Add them as lines of their own:
 
 - usage_folders: where the usage folders are kept, as paths from the top of
   the repository, such as okf/{{project}}-usage. {{project}} stands for the
-  project name, and several paths are separated by spaces. Left out, there is
-  one: <project>-usage/ inside the project folder. A usage folder holds what
-  other projects need to know to use this one, and `/context-db update`
-  writes it.
+  project name. Left out, there is one: <project>-usage/ inside the project
+  folder. A usage folder holds what other projects need to know to use this
+  one, and `/context-db update` writes it.
 - global_context: glob patterns that match knowledge folders outside
   context-db/, such as ../*/okf/*-usage. They are read from the top of the
-  repository, and several are separated by spaces. `/context-db prompt` lists
-  the folders they match.
+  repository. `/context-db prompt` lists the folders they match.
 - settings_files: more settings files to read, such as
-  ~/.config/context-db/team.md, separated by spaces. Each is read after this
-  file and overrides it.
+  ~/.config/context-db/team.md. Each is read after this file and overrides
+  it.
+
+Each of the three takes one value on its line, or several as a list:
+
+    global_context:
+      - okf/*-usage
+      - ../*/okf/*-usage
 
 settings.local.md in this folder, if it exists, is read after those and
 overrides any of this for one user. Every *.local.md file in this folder is
@@ -547,7 +562,7 @@ def load_settings(path):
     """Return (values, problem). The problem is None when the file is usable."""
     if not os.path.isfile(path):
         return None, "does not exist"
-    meta, _ = read_doc(path)
+    meta, _ = parse_frontmatter(read_text(path), LIST_SETTINGS)
     if meta is None:
         return None, "has no `---` block at the top holding the settings"
     return meta, None
@@ -566,9 +581,14 @@ def read_settings(path, named_by=""):
     return values
 
 
+def list_items(value):
+    """The items of a setting that holds a list, as parse_frontmatter returns it."""
+    return [item for item in value.split(LIST_SEPARATOR) if item]
+
+
 def named_settings(cdb, value):
     """The files that a `settings_files` value names, as paths from the cwd."""
-    return [rel(from_root(cdb, name)) for name in value.split()]
+    return [rel(from_root(cdb, name)) for name in list_items(value)]
 
 
 def settings_order(cdb):
@@ -593,12 +613,22 @@ def settings_order(cdb):
     return order
 
 
+def setting_lines(key, value):
+    """A setting as it is written: on one line, or as a YAML list when it holds several values."""
+    if key not in LIST_SETTINGS:
+        return [f"{key}: {value}"]
+    items = [f'"{item}"' if scalar_problem([item]) else item for item in list_items(value)]
+    if len(items) == 1:
+        return [f"{key}: {items[0]}"]
+    return [f"{key}:"] + [f"  - {item}" for item in items]
+
+
 def write_settings(path, values, default_body):
     """Rewrite the frontmatter of a settings file, keeping whatever body it has."""
     body = read_doc(path)[1] if os.path.isfile(path) else "\n" + text(default_body) + "\n"
     keys = [key for key in SETTINGS_KEYS if key in values]
     keys += [key for key in values if key not in SETTINGS_KEYS]
-    header = "\n".join(f"{key}: {values[key]}" for key in keys)
+    header = "\n".join(line for key in keys for line in setting_lines(key, values[key]))
     write_text(path, f"---\n{header}\n---\n{body}")
 
 
@@ -611,13 +641,27 @@ def unknown_settings(values):
     return [key for key in values if key not in SETTINGS_KEYS + (SETTINGS_FILES,)]
 
 
+def crowded_settings(values):
+    """The list settings that hold several values on one line, which is not a list."""
+    return [
+        key
+        for key in LIST_SETTINGS
+        if any(
+            len(item.split()) > 1 for item in list_items(values.get(key, ""))
+        )  # optional settings
+    ]
+
+
 def check_settings(values, path):
-    """Stop on a key that is not a setting."""
+    """Stop on a key that is not a setting, and on several values squeezed onto one line."""
     unknown = unknown_settings(values)
     if unknown:
         keys = ", ".join(f"`{key}`" for key in unknown)
         known = ", ".join(SETTINGS_KEYS + (SETTINGS_FILES,))
         sys.exit(text(UNKNOWN_SETTING, path=path, keys=keys, known=known))
+    for key in crowded_settings(values):
+        items = "\n".join(f"  - {item}" for item in values[key].split())
+        sys.exit(text(SEVERAL_VALUES_ON_A_LINE, path=path, key=key, items=items))
 
 
 def load_config(cdb):
@@ -672,7 +716,7 @@ def usage_dirs(cdb, config):
     not it exists yet.
     """
     name = config["project"]
-    named = config.get("usage_folders", "").split()  # an optional setting
+    named = list_items(config.get("usage_folders", ""))  # an optional setting
     if not named:
         return [os.path.join(project_dir(cdb, config), f"{name}-usage")]
     folders = [rel(from_root(cdb, folder.replace(PROJECT_NAME, name))) for folder in named]
@@ -693,13 +737,15 @@ def own_bundles(cdb, config):
 
 
 def global_patterns(config):
-    return config.get("global_context", "").split()  # an optional setting
+    return list_items(config.get("global_context", ""))  # an optional setting
 
 
 # ── Frontmatter ──────────────────────────────────────────────────────────────
 # Hand-rolled, because the skill must run on a bare interpreter with no PyYAML.
 # It reads top-level scalar keys only, in every scalar style an LLM produces:
 # inline, quoted, folded onto continuation lines, or behind a block indicator.
+# The settings that hold a list are the one exception: for the keys a caller
+# names, it also reads a YAML list, written under the key or in brackets.
 #
 # Every key is optional as far as the parser is concerned, so callers read the
 # result with .get(). Whether a key is required is lint's decision, not this
@@ -707,10 +753,26 @@ def global_patterns(config):
 
 KEY_RE = re.compile(r"^([A-Za-z_][\w-]*):(?:\s+(.*))?$")
 BLOCK_SCALAR_RE = re.compile(r"^[>|][-+0-9]*$")
+LIST_ITEM_RE = re.compile(r"^\s*-\s+(.+?)\s*$")
+FLOW_LIST_RE = re.compile(r"^\[(.*)\]$")
 
 
-def parse_frontmatter(content):
-    """Return (meta, body). meta is None when there is no frontmatter block."""
+def unquoted(value):
+    """A YAML scalar without its quotes."""
+    if len(value) >= 2 and value[0] == value[-1] == '"':
+        return value[1:-1].replace('\\"', '"').replace("\\\\", "\\")
+    if len(value) >= 2 and value[0] == value[-1] == "'":
+        return value[1:-1].replace("''", "'")
+    return value
+
+
+def parse_frontmatter(content, lists=()):
+    """Return (meta, body). meta is None when there is no frontmatter block.
+
+    `lists` names the keys that may hold a YAML list. Such a value comes back
+    as its items joined by LIST_SEPARATOR; one value on the key's line is a
+    list of one.
+    """
     lines = content.split("\n")
     if lines[0].strip() != "---":
         return None, content
@@ -723,20 +785,29 @@ def parse_frontmatter(content):
         return None, content
 
     meta = {}
+    items = {}  # the keys written as a YAML list, with their items
     key = None
     for line in lines[1:end]:
         match = KEY_RE.match(line)
+        item = LIST_ITEM_RE.match(line)
         if match:
             key = match.group(1)
             value = (match.group(2) or "").strip()
             meta[key] = "" if BLOCK_SCALAR_RE.match(value) else value
+            flow = FLOW_LIST_RE.match(value) if key in lists else None
+            if flow:
+                items[key] = [part.strip() for part in flow.group(1).split(",") if part.strip()]
+            elif key in lists and not value:
+                items[key] = []
+        elif key in items and item and not meta[key]:
+            items[key].append(item.group(1))
         elif key and line[:1] in (" ", "\t") and line.strip():
             meta[key] = (meta[key] + " " + line.strip()).strip()
     for key, value in meta.items():
-        if len(value) >= 2 and value[0] == value[-1] == '"':
-            meta[key] = value[1:-1].replace('\\"', '"').replace("\\\\", "\\")
-        elif len(value) >= 2 and value[0] == value[-1] == "'":
-            meta[key] = value[1:-1].replace("''", "'")
+        meta[key] = unquoted(value)
+    for key, found in items.items():
+        if found:
+            meta[key] = LIST_SEPARATOR.join(unquoted(part) for part in found)
     return meta, "\n".join(lines[end + 1 :])
 
 
@@ -1770,10 +1841,22 @@ def cmd_configure(args):
         elif problem:
             lines.append(f"- {label}: {problem}. Rewrite it by hand first.")
         else:
-            shown = ", ".join(f"`{key}: {value}`" for key, value in values.items()) or "empty"
+            shown = (
+                ", ".join(
+                    f"`{key}: {' '.join(list_items(value))}`" for key, value in values.items()
+                )
+                or "empty"
+            )
             unknown = ", ".join(f"`{key}`" for key in unknown_settings(values))
             shown += (
                 f". Not a setting, so the other commands stop on it: {unknown}" if unknown else ""
+            )
+            crowded = ", ".join(f"`{key}`" for key in crowded_settings(values))
+            shown += (
+                f". Several values on one line, which must be a list, so the other commands "
+                f"stop on it: {crowded}"
+                if crowded
+                else ""
             )
             lines.append(f"- {label}: {shown}")
 
@@ -1781,14 +1864,14 @@ def cmd_configure(args):
     lines.append(f"- Project folders found: {found}")
     known = {key: configured(cdb, key) for key in ("project", "usage_folders", "global_context")}
     if known["project"]:
-        named = known["usage_folders"]
+        named = " ".join(list_items(known["usage_folders"]))
         where = f"from `usage_folders: {named}`" if named else "in the default place"
         states = ", ".join(
             f"`{folder}/` ({'exists' if os.path.isdir(folder) else 'does not exist yet'})"
             for folder in usage_dirs(cdb, known)
         )
         lines.append(f"- Usage folders, {where}: {states}")
-    patterns = known["global_context"]
+    patterns = " ".join(list_items(known["global_context"]))
     if patterns:
         folders = global_folders(cdb, known)
         matched = ", ".join(f"`{folder}/`" for folder in folders) or "no folders"
@@ -1899,11 +1982,12 @@ def cmd_setup(args):
         ("project", args.project),
         ("python", args.python),
         ("main_branch", args.main_branch),
-        ("usage_folders", " ".join(args.usage_folder or [])),
-        ("global_context", " ".join(args.global_context or [])),
+        ("usage_folders", LIST_SEPARATOR.join(args.usage_folder or [])),
+        ("global_context", LIST_SEPARATOR.join(args.global_context or [])),
     ):
         if value:
             config[key] = value
+    check_settings(config, shared_path)
     if not config.get("project"):
         sys.exit("Error: no project name. Pass --project <name>.")
     check_project_name(cdb, config["project"])
@@ -1914,6 +1998,7 @@ def cmd_setup(args):
     if args.local:
         local = read_settings(local_path) if os.path.isfile(local_path) else {}
         check_settings(local, local_path)
+        given = {}
         for item in args.local:
             key, separator, value = item.partition("=")
             if not separator or not value or key not in SETTINGS_KEYS:
@@ -1921,7 +2006,10 @@ def cmd_setup(args):
                     "Error: --local takes KEY=VALUE, where KEY is one of "
                     f"{', '.join(SETTINGS_KEYS)}."
                 )
-            local[key] = value
+            given.setdefault(key, []).append(value)
+        for key, values in given.items():  # a list setting takes the flag once for each value
+            local[key] = LIST_SEPARATOR.join(values) if key in LIST_SETTINGS else values[-1]
+        check_settings(local, local_path)
 
     os.makedirs(conf_dir(cdb), exist_ok=True)
     write_settings(shared_path, config, SETTINGS_BODY)

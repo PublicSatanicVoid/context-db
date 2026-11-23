@@ -630,8 +630,8 @@ python3 .claude/skills/context-db/context-db.py configure --project acme-payment
 
 Its options are `--project`, `--main-branch`, `--python`, `--usage-folder`,
 `--global-context`, and `--local KEY=VALUE` for a setting that applies only
-to you. [Setup](setup.md#settings) describes each
-setting.
+to you. Give `--usage-folder` or `--global-context` once for each value.
+[Setup](setup.md#settings) describes each setting.
 
 ## Listing and checking: toc
 

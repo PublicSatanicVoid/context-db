@@ -27,6 +27,15 @@ A new key needs that same justification. Three keys are optional:
 `usage_folders` (see [usage-folders.md](./usage-folders.md)), and
 `settings_files`, which names more settings files that override this one.
 
+Those three hold a list: one value on the key's line, or a YAML list under
+it. The owner, 2026-11-23, of `global_context: okf/*-usage ../*/okf/*-usage`:
+"This config seems weird to me", "Should this not be a list?" The old form,
+several values on one line, now stops the commands and prints the list to
+write. That was the implementing agent's choice, under the no-shims rule: read
+as one value it would be a path with a space in it, and nothing would say so.
+So a value cannot contain a space. The parser reads a list only for the keys
+it is told to, which leaves the frontmatter of every note as it was.
+
 A line that is not a setting stops every command but `configure`, which marks
 it. The implementing agent chose that on 2026-11-22, when `usage_folder`
 became `usage_folders`: a renamed or misspelt key that is ignored leaves the

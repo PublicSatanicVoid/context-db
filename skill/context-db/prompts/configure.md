@@ -161,7 +161,7 @@ Make each change as soon as the user answers, and show them the new text.
         {setup_cmd} --global-context '<pattern>'
 
     For patterns that fit only this user's machine, pass
-    `--local 'global_context=<patterns, separated by spaces>'` in place of
+    `--local 'global_context=<pattern>'` for each in place of
     `--global-context`.
 12. **Usage folders.** A usage folder holds usage knowledge: what agents in
     other projects need to know to use this one. `/context-db update` writes

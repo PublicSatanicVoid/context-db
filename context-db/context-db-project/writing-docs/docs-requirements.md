@@ -62,6 +62,13 @@ Added by the owner on 2026-11-11:
   comes first. The rest is on the Layout page. What the owner said of the
   longer opening this replaced is in [voice.md](./voice.md).
 - Sharing is a section of the Layout page, not a page of its own.
+- The Setup page says where the knowledge is before it explains the settings
+  (2026-11-23): "By default, it looks for knowledge in the context-db folder",
+  then the `<name>-project` folder and "external knowledge folder either
+  copied or symlinked into place", then "a section on grabbing information
+  from other locations", then a settings section that makes it "clearer what's
+  in the setting file" and stays concise. The owner called the Layout page
+  "good, could be more concise".
 - No logo in the header. The name there and the home page title both read
   `/context-db`.
 - No call-to-action buttons under the intro. The owner found the two pill

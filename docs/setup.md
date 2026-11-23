@@ -136,46 +136,103 @@ different, say so in plain words after the command.
 [A command is a starting point](commands.md#a-command-is-a-starting-point)
 has examples.
 
-That loop keeps your project knowledge, which is for agents working on your
-project. If other projects use yours, tell `update` to start a
-[usage folder](layout.md#usage-folders). It holds your usage knowledge: the
-few things their agents need in order to use your project. From then on
-`update` and `maintain` look after it as well. To read the usage folder of a
-project that yours uses, see
-[How another project reads it](layout.md#how-another-project-reads-it).
+## Where the knowledge is
 
-## Settings
+By default context-db looks for knowledge in one place: the `context-db/`
+folder at the top of your repository.
 
-Settings live in `context-db/configuration/settings.md`, which is committed, so
-the whole team shares it. They are the `key: value` lines at the top:
+```text
+context-db/
+├── configuration/               settings and rules
+├── acme-payments-project/       your project's own knowledge
+│   └── acme-payments-usage/     what other projects need to use yours (optional)
+├── coding-standards/            knowledge from elsewhere, copied in
+└── acme-ledger-usage -> ...     knowledge from elsewhere, symlinked in
+```
 
-```markdown
+- `context-db/<name>-project/` is the project folder. It holds the knowledge
+  that is your project's own, and it is the only folder here that the commands
+  write. If other projects use yours, tell `update` to start a
+  [usage folder](layout.md#usage-folders) inside it.
+- Every other folder in `context-db/` is knowledge from somewhere else, such
+  as your team's coding standards, or the usage folder of a project that yours
+  uses. Copy the folder in, or symlink it into place. The agent reads it and
+  never changes it. [Sharing](layout.md#sharing) shows both ways.
+
+`prompt` lists each of these folders with its description, your project folder
+first, and the agent looks into the ones that match the task.
+
+## Knowledge kept somewhere else
+
+Knowledge does not have to be inside `context-db/`. The `global_context`
+setting finds knowledge folders where they are, with nothing copied or linked:
+
+```yaml
 ---
 project: acme-payments
 python: python3
 main_branch: main
+global_context:
+  - okf/*-usage
+  - ../*/okf/*-usage
 ---
 ```
 
-| Setting | Meaning |
+Each value is a glob pattern, read from the top of your repository. The first
+one here matches every folder whose name ends in `-usage` in your own `okf/`
+folder. The second matches the same in each repository checked out next to
+yours. `prompt` lists the folders they match after your own, and the agent
+never changes them. [Global context](layout.md#global-context) has more.
+
+Your own usage folder can live outside `context-db/` as well, for a team that
+publishes it from a folder such as `okf/`. The `usage_folders` setting says
+where. [Keeping it somewhere else](layout.md#keeping-it-somewhere-else) has
+more.
+
+## Settings
+
+The settings are the `key: value` lines at the top of
+`context-db/configuration/settings.md`. The file is committed, so the whole
+team shares it. This one uses every setting:
+
+```yaml
+---
+project: acme-payments
+python: python3
+main_branch: main
+usage_folders: okf/acme-payments-usage
+global_context:
+  - okf/*-usage
+  - ../*/okf/*-usage
+settings_files: ../standards/context-db-settings.md
+---
+```
+
+| Setting | What it is |
 | --- | --- |
 | `project` | The project's name. The project folder is `context-db/<project>-project/`. |
 | `python` | The command the agent uses to run the script. |
-| `main_branch` | The branch that `wip --maintain` and `maintain` check the plans in `wip/` against. |
+| `main_branch` | The branch that the plans in `wip/` are checked against. |
+| `usage_folders` | Optional. Where your [usage folders](layout.md#usage-folders) are kept. Left out, there is one, inside the project folder. `{project}` in a path stands for the project name. |
+| `global_context` | Optional. Patterns that find [knowledge kept somewhere else](#knowledge-kept-somewhere-else). |
+| `settings_files` | Optional. [More settings files](#settings-from-other-files), read after this one. |
 
-Two more settings are optional.
+`configure` writes the first three. Add the others by hand, or with
+`configure --usage-folder` and `configure --global-context`.
 
-| Setting | Meaning |
-| --- | --- |
-| `usage_folders` | Where your [usage folders](layout.md#usage-folders) are kept, as paths from the top of your repository, such as `okf/acme-payments-usage`. `{project}` in a path stands for the project name, and several paths are separated by spaces. Left out, there is one: `<project>-usage/` inside the project folder. |
-| `global_context` | Glob patterns that match knowledge folders outside `context-db/`, such as `../*/okf/*-usage`. They are read from the top of your repository, and several are separated by spaces. `prompt` lists the folders they match. [Global context](layout.md#global-context) explains them. |
+The last three take one value on the line, or several as a list, the way
+`global_context` is written above. Paths and patterns are read from the top of
+your repository, and can also start with `~` or `/`.
 
-Edit them by hand. Anything below the `---` lines is yours for notes.
+Anything below the `---` lines is yours for notes. The commands stop on a line
+that is not a setting, so that a misspelt name is not ignored without a word.
+
+### Your own settings
 
 `context-db/configuration/settings.local.md` is yours alone. It is gitignored,
 like every `*.local.md` file in that folder, and anything in it overrides the
-shared file. Use it when your machine needs
-something different, such as a Python that lives in an unusual place:
+shared file. Use it when your machine needs something different, such as a
+Python that lives in an unusual place:
 
 ```bash
 python3 .claude/skills/context-db/context-db.py configure --local python=/opt/python3.12/bin/python3
@@ -183,31 +240,20 @@ python3 .claude/skills/context-db/context-db.py configure --local python=/opt/py
 
 ### Settings from other files
 
-A settings file can name more settings files. They are plain files on disk that
-you write yourself, and they can live anywhere: in a repository your team
-shares, or in your home folder. Add a `settings_files` line by hand:
-
-```markdown
----
-project: acme-payments
-python: python3
-main_branch: main
-settings_files: ../standards/context-db-settings.md
----
-```
-
-Each file on that line is read after the file that names it, and whatever it
-sets overrides what was read before. It looks like `settings.md`: Markdown, with
-`key: value` lines at the top. Several are separated by spaces. A path is read
-from the top of your repository, and it can also start with `~` or `/`.
+`settings_files` names more settings files. You write them yourself, and they
+can live anywhere: in a repository your team shares, or in your home folder.
+Each looks like `settings.md`, and is read after the file that names it, so
+what it sets wins.
 
 This one is shared by a team that keeps every project's usage folder in `okf/`,
 and finds the others there:
 
-```markdown
+```yaml
 ---
 usage_folders: okf/{project}-usage
-global_context: okf/*-usage ../*/okf/*-usage
+global_context:
+  - okf/*-usage
+  - ../*/okf/*-usage
 ---
 ```
 
@@ -226,12 +272,10 @@ So name a file that everyone on the project has in `settings.md`, and a file
 that only you have in `settings.local.md`. Your own settings still win over the
 team's.
 
-No command creates or changes these files, and no flag sets the
-`settings_files` line. If a file on that line is missing or has no `---` block,
-the commands stop and say which file it is. They also stop on a line that is
-not a setting, in any settings file, so that a misspelt name is not ignored
-without a word. `/context-db configure` still runs, and lists every settings
-file in the order it is read.
+No command writes these files, or the `settings_files` line. If a file named
+there is missing or has no `---` block, the commands stop and say which file it
+is. `/context-db configure` still runs, and lists every settings file in the
+order it is read.
 
 Keep `python` in `settings.md` or `settings.local.md`. The agent reads that one
 line itself, from those two files, before it can run the script.
