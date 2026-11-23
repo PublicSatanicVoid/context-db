@@ -25,6 +25,14 @@ easily within a project".
 - The README and the docs home page name the two "right at the start", in
   a sentence. See
   [docs-requirements.md](../writing-docs/docs-requirements.md).
+- On those two pages usage knowledge is "simply the docs/api of the project,
+  expressed in okf format and designed to be consumed by other project using
+  context-db (which is not necessary either, it's simply okf format md
+  files)" (2026-11-23). The owner found a list of what a usage folder holds,
+  followed by a comparison with docs, "too complicated". That sentence is the
+  pitch, and the rule has not changed: a usage note never reprints an API or
+  the docs. The Layout page joins the two with "your docs and API as those
+  agents need them".
 - A project reads another's usage knowledge "as easily as it's own internal
   project knowledge", and its own is privileged, "more top of mind". So
   `prompt.md` tells the agent to start with the project folder on every task,
@@ -48,6 +56,6 @@ The owner was told of each in a summary and did not object.
   reader, and how to judge "wrong" in a usage folder.
 - `configure` offers to mount a related repository's usage folder and never
   its project folder, which nobody outside that project needs.
-- The human docs compare a usage folder to docs, as the owner does. The usage
-  prompts do not: to an agent "docs" invites a complete reference, and a usage
+- The human docs call usage knowledge the project's docs and API, as the owner
+  does. The usage prompts do not: to an agent "docs" invites a complete reference, and a usage
   folder holds the bare minimum. This is a judgment, not a trial result.

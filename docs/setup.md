@@ -78,8 +78,8 @@ Running it again is safe. It never overwrites a file that already exists.
 ## 3. Make it behave the way you want
 
 Five files in `context-db/configuration/` control how the agent behaves:
-`ON_PROMPT.md`, `ON_UPDATE.md`, `ON_WIP.md`, `ON_CONFIGURE.md`, and
-`ON_MAINTAIN.md`. Whatever a file says is added to the agent's instructions
+`ON_PROMPT.md`, `ON_UPDATE.md`, `ON_WIP.md`, `ON_MAINTAIN.md`, and
+`ON_CONFIGURE.md`. Whatever a file says is added to the agent's instructions
 every time that command runs.
 
 Open them and edit them by hand. They are plain Markdown, and the agent reads
@@ -118,17 +118,17 @@ Add an endpoint for refunds. Partial refunds can wait.
 After it:
 
 ```text
-/context-db update --push
+/context-db update
 ```
 
-That is the whole loop: `prompt`, work for as many turns as it takes, `update
---push`. `--push` is optional: `--commit` commits and does not push, and with
-neither the commit is left to you. For work that runs over several sessions,
-you can also keep a plan with `/context-db wip`; it is optional. `prompt` then
-starts the next session on that work from the plan, and `update` keeps it up
-to date. Run `/context-db maintain` rarely, as a spring cleaning, to cut the
-knowledge base back to what is still needed. [Commands](commands.md) explains
-all five.
+That is the whole loop: `prompt`, work for as many turns as it takes,
+`update`. If you like, `update` can also
+[commit and push](commands.md#context-db-update) what the session changed.
+For work that runs over several sessions, you can also keep a plan with
+`/context-db wip`; it is optional. `prompt` then starts the next session on
+that work from the plan, and `update` keeps it up to date. Run
+`/context-db maintain` rarely, as a spring cleaning, to cut the knowledge base
+back to what is still needed. [Commands](commands.md) explains all five.
 
 Each command is a starting point. It covers the whole knowledge base, and
 there are no flags to narrow it. When you want something narrower or

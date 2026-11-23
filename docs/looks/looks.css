@@ -35,61 +35,6 @@ html[data-cdb-headings="chevron"] .bd-article h2::before {
   color: transparent;
 }
 
-/* ── Command cards (home page) ───────────────────────────────────────────── */
-
-/* Top stripe: each card wears its command's color along the top, and casts
-   it as a shadow when the pointer is over it. */
-html[data-cdb-cards="stripe"] .bd-content .command-card {
-  border-top: 5px solid var(--command-color);
-  transition:
-    transform 0.15s ease,
-    box-shadow 0.15s ease;
-}
-html[data-cdb-cards="stripe"] .bd-content .command-card:hover {
-  box-shadow: 0 0.9rem 1.6rem -0.8rem var(--command-color) !important;
-}
-
-/* Window: the cards get the same three dots as the code blocks. */
-html[data-cdb-cards="window"] .command-card {
-  border: 1px solid var(--cdb-tint-border);
-  border-radius: 0.7rem;
-  overflow: hidden;
-}
-html[data-cdb-cards="window"] .command-card .sd-card-body {
-  padding-top: 2.75rem;
-  background: var(--cdb-code-bg) linear-gradient(var(--cdb-tint-border), var(--cdb-tint-border)) no-repeat 0
-    2.05rem / 100% 1px;
-}
-html[data-cdb-cards="window"] .command-card::before {
-  content: "";
-  position: absolute;
-  z-index: 1;
-  top: 0.9rem;
-  left: 1rem;
-  width: 0.68rem;
-  height: 0.68rem;
-  border-radius: 50%;
-  background: #ff5f57;
-  box-shadow:
-    1.1rem 0 0 #febc2e,
-    2.2rem 0 0 #28c840;
-}
-
-/* Spotlight: a patch of the card's color follows the pointer across it.
-   looks.js sets --cdb-cx and --cdb-cy. */
-html[data-cdb-cards="spotlight"] .command-card {
-  background:
-    radial-gradient(
-      15rem circle at var(--cdb-cx, 50%) var(--cdb-cy, -30%),
-      color-mix(in srgb, var(--command-color) 26%, transparent),
-      transparent 70%
-    ),
-    var(--pst-color-on-background);
-}
-html[data-cdb-cards="spotlight"] .command-card .sd-card-body {
-  background: transparent;
-}
-
 /* ── Extras ──────────────────────────────────────────────────────────────── */
 
 /* Typed title: /context-db types itself, then a cursor blinks after it. The

@@ -22,16 +22,6 @@
         ["chevron", "Chevron"],
       ],
     },
-    {
-      id: "cards",
-      label: "Command cards (home page)",
-      options: [
-        ["current", "Plain"],
-        ["stripe", "Top stripe"],
-        ["window", "Window"],
-        ["spotlight", "Spotlight"],
-      ],
-    },
   ];
 
   // Extras are on or off, and any number can be on.
@@ -117,7 +107,7 @@
     if (!glow) document.body.appendChild(element("div", "cdb-pointer-glow"));
   }
 
-  // The pointer's position, for the glow and for the Spotlight cards.
+  // The pointer's position, for the glow.
   function trackPointer() {
     var waiting = false;
     window.addEventListener(
@@ -132,22 +122,10 @@
             glow.style.setProperty("--cdb-mx", event.clientX + "px");
             glow.style.setProperty("--cdb-my", event.clientY + "px");
           }
-          var card = event.target.closest && event.target.closest(".command-card");
-          if (card) {
-            var box = card.getBoundingClientRect();
-            card.style.setProperty("--cdb-cx", event.clientX - box.left + "px");
-            card.style.setProperty("--cdb-cy", event.clientY - box.top + "px");
-          }
         });
       },
       { passive: true }
     );
-    document.querySelectorAll(".command-card").forEach(function (card) {
-      card.addEventListener("pointerleave", function () {
-        card.style.removeProperty("--cdb-cx");
-        card.style.removeProperty("--cdb-cy");
-      });
-    });
   }
 
   // ── The panel ────────────────────────────────────────────────────────────

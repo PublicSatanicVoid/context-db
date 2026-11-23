@@ -18,9 +18,9 @@ of knowledge", "Benefits", "Install", "What it is", the commands, and
 "Motivation" almost word for word.
 Only the links differ: full site URLs in the README, relative ones on the home
 page. The
-command table and cards are the `--help` summaries verbatim, which a test
-enforces. When one changes, change the other. The home page uses cards and tabs
-where the README uses a table and a tree. The README's Install section also
+command list is the `--help` summaries verbatim, which a test enforces. When
+one changes, change the other. The home page uses tabs where the README uses a
+tree. The README's Install section also
 carries the steps themselves, because the install prompt sends agents there.
 
 [overview.md](../overview.md) is not a copy of the README. It is what a new

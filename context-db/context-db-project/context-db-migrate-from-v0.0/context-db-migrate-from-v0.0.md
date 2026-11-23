@@ -23,7 +23,7 @@ of the v0.0 tree. Tell the user wherever it leaves you guessing.
 | -------------------------------------------------------- | -------------------------------------------------------- |
 | Frontmatter: `description`                               | Frontmatter: `type` and `description` (OKF)              |
 | TOC printed by `context-db-generate-toc.py`              | TOC printed on demand by `context-db.py toc`, as before  |
-| Commands `prompt`, `update`, `maintain`, `read`          | `prompt`, `update`, `wip`, `configure`, `maintain`       |
+| Commands `prompt`, `update`, `maintain`, `read`          | `prompt`, `update`, `wip`, `maintain`, `configure`       |
 | No config                                                | `context-db/configuration/settings.md` (+ `.local.md`)   |
 | `context-db/ON_PROMPT.md` at the root                    | `context-db/configuration/ON_PROMPT.md`                  |
 | `ON_MAINTAIN.md` at the root                             | In `configuration/`; `ON_WIP.md`, `ON_CONFIGURE.md` new  |

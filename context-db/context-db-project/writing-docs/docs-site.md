@@ -36,7 +36,7 @@ picker, [docs/looks/](../../../docs/looks/looks.js), which is off unless the
 docs are built with `CONTEXT_DB_LOOKS=1` ([conf.py](../../../docs/conf.py)). To
 have it on the published site, set that variable in `docs.yml` for as long as
 the choosing takes. The owner clicks through the options and pastes back the
-line the panel gives, such as `Looks: cards=stripe extras=codeglow`. Move the
+line the panel gives, such as `Looks: headings=slash extras=codeglow`. Move the
 chosen rules into `custom.css` and take them out of the picker. Ideas that were
 tried and not adopted stay in the picker for later.
 
@@ -52,10 +52,6 @@ tried and not adopted stay in the picker for later.
 - Dropdown colors come from `:color: secondary` on the directive. The theme
   hard-codes the tint behind it, so `custom.css` points `--sd-color-secondary-bg`
   at the palette.
-- The theme's own card rule, `.bd-content .sd-card`, outranks a single class,
-  and the card body paints its own background. A border, shadow, or background
-  on `.command-card` does nothing unless the selector starts with `.bd-content`.
-  A top stripe sat in the CSS for days without ever showing.
 - A table wider than a phone screen scrolls sideways inside its container and
   its last column is cut off, while the page itself reports no overflow. So
   compare each table with its container at 390px, not the page with the

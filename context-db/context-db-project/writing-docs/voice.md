@@ -47,6 +47,8 @@ the v0.1 rewrite of the docs.
   to sell the answer to it.
 - Do not repeat a noun through a sentence or a short paragraph. The owner
   asked for one "without the word project used so often".
+- Say a thing directly. A colon followed by a list of clauses, and "it is to
+  X what Y is to Z", are what the owner called "too complicated".
 
 A correction to one passage applies to the whole page. On 2026-11-23, after
 pointing at three passages one at a time, the owner said: "I want you to fix
@@ -66,6 +68,10 @@ way, in the docs, the README, and the prompt files:
 
 Flags stay on the command's line. Only the terminal form keeps quotes
 (`context-db.py prompt "..."`), because the shell needs them.
+
+The owner wants this form stressed on the home page: "I almost always use
+multi line prompt" (2026-11-23). The Example there ends with a steered
+`update` over several lines, in the owner's own words about grep tooling.
 
 ## Person
 

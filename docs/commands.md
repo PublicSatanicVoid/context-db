@@ -1,7 +1,7 @@
 # Commands
 
-There are five commands: `prompt`, `update`, `wip`, `configure`, and
-`maintain`. `/context-db --help` lists them. Each one prints a set of
+There are five commands: `prompt`, `update`, `wip`, `maintain`, and
+`configure`. `/context-db --help` lists them. Each one prints a set of
 instructions, and the agent follows them. Nothing is hidden: the exact text is
 under each command below, and [How it all fits together](#how-it-all-fits-together)
 shows the whole message each command sends. Add `--show-context` to any command
@@ -105,8 +105,8 @@ It looks like it is in the new receipts database code.
 Can you investigate and propose a fix?
 ```
 
-Use it before a task. Use it again whenever a long session has drifted away from
-your project's rules.
+Use it before a task, or to ask a question. Use it again whenever a long
+session has drifted away from your project's rules.
 
 What the agent does:
 
@@ -217,15 +217,16 @@ files by hand, or another session did, say where to look:
 Also read `git diff main`. I reworked the retry code by hand.
 ```
 
-`--commit` and `--push` go on the same line as the command:
+After an update you often want to commit, and perhaps push. Two flags save
+you asking for that. They go on the same line as the command:
 
 ```text
 /context-db update --push
 ```
 
-Both are optional, and you never have to use either. `--commit` commits
-everything the session changed and does not push. `--push` commits and pushes.
-With neither, `update` makes no commit, and you commit when and how you like.
+`--commit` commits everything the session changed and does not push. `--push`
+commits and pushes. Both are a convenience and a matter of preference. With
+neither, `update` makes no commit, and you commit when and how you like.
 
 ### Usage knowledge
 
@@ -380,70 +381,6 @@ How `wip.md` and the plans are kept, for every form except `--list`:
 ```
 :::
 
-## /context-db configure
-
-```text
-/context-db configure
-```
-
-Run it first, to set context-db up in a repository, and again whenever you want
-it to behave differently. `prompt`, `update`, `wip`, and `maintain` tell you to
-run it if context-db is not set up yet.
-
-`configure` is a helper. It gets context-db working and starts a short
-conversation about how the agent should treat the knowledge base. Everything it
-writes is plain Markdown, and you are expected to open those files afterwards
-and edit them by hand until they say what you want.
-
-What the agent does:
-
-1. Looks at what is already there: the Python on your machine, the repository
-   name, the main branch, any existing settings, and whether `AGENTS.md` or
-   `CLAUDE.md` mention context-db.
-2. Asks for the project name, and the main branch and Python command when it
-   cannot tell. Then it writes the settings and creates whatever is missing. It
-   never overwrites anything.
-3. Asks a few questions, one at a time, as a menu, and writes each answer into
-   the files as you give it:
-   - Is this a new project, where breaking changes are fine, or does other code
-     depend on it? What is it, and who uses it? This becomes a rule in
-     `ON_PROMPT.md` and the description of the project folder.
-   - Should the agent read the knowledge base only when you run a command?
-   - Does your agent read `AGENTS.md` or `CLAUDE.md`? It adds a one-line note
-     about context-db to that file.
-   - May the agent update the knowledge base as it works, after `prompt`, or
-     only when you run `update`?
-   - When a note gets too long, should the agent split it while it is working
-     in it, or only when you run `maintain`?
-   - When it is not obvious how much to clean up after a task, should the
-     agent ask you, clean up without asking, or delete nothing without asking?
-   - Which other repositories does this project rely on?
-   - Should `prompt` also list knowledge folders that are kept outside
-     `context-db/`, such as the usage folders of other projects?
-   - If other code depends on this project: where should the notes for the
-     projects that use it be kept?
-   - Is there anything else the agent should always do?
-4. Ends with a short summary: the files it changed, and a reminder that this
-   was only a first draft for you to edit.
-
-These are the files it writes:
-
-| File | What it controls |
-| --- | --- |
-| `context-db/configuration/settings.md` | Shared settings |
-| `context-db/configuration/settings.local.md` | Your own settings, if you have any |
-| `context-db/configuration/ON_*.md` | The project's rules, added to each command |
-| `context-db/configuration/ON_*.local.md` | Your own rules, if you have any |
-| `AGENTS.md` or `CLAUDE.md` | The note that tells the agent about the knowledge base |
-
-:::{dropdown} The text the agent receives
-:color: secondary
-
-```{literalinclude} ../skill/context-db/prompts/configure.md
-:language: markdown
-```
-:::
-
 ## /context-db maintain
 
 ```text
@@ -550,6 +487,70 @@ is shown under [`wip`](#context-db-wip). When you have a usage folder, it
 receives this:
 
 ```{literalinclude} ../skill/context-db/prompts/maintain-usage.md
+:language: markdown
+```
+:::
+
+## /context-db configure
+
+```text
+/context-db configure
+```
+
+Run it first, to set context-db up in a repository, and again whenever you want
+it to behave differently. `prompt`, `update`, `wip`, and `maintain` tell you to
+run it if context-db is not set up yet.
+
+`configure` is a helper. It gets context-db working and starts a short
+conversation about how the agent should treat the knowledge base. Everything it
+writes is plain Markdown, and you are expected to open those files afterwards
+and edit them by hand until they say what you want.
+
+What the agent does:
+
+1. Looks at what is already there: the Python on your machine, the repository
+   name, the main branch, any existing settings, and whether `AGENTS.md` or
+   `CLAUDE.md` mention context-db.
+2. Asks for the project name, and the main branch and Python command when it
+   cannot tell. Then it writes the settings and creates whatever is missing. It
+   never overwrites anything.
+3. Asks a few questions, one at a time, as a menu, and writes each answer into
+   the files as you give it:
+   - Is this a new project, where breaking changes are fine, or does other code
+     depend on it? What is it, and who uses it? This becomes a rule in
+     `ON_PROMPT.md` and the description of the project folder.
+   - Should the agent read the knowledge base only when you run a command?
+   - Does your agent read `AGENTS.md` or `CLAUDE.md`? It adds a one-line note
+     about context-db to that file.
+   - May the agent update the knowledge base as it works, after `prompt`, or
+     only when you run `update`?
+   - When a note gets too long, should the agent split it while it is working
+     in it, or only when you run `maintain`?
+   - When it is not obvious how much to clean up after a task, should the
+     agent ask you, clean up without asking, or delete nothing without asking?
+   - Which other repositories does this project rely on?
+   - Should `prompt` also list knowledge folders that are kept outside
+     `context-db/`, such as the usage folders of other projects?
+   - If other code depends on this project: where should the notes for the
+     projects that use it be kept?
+   - Is there anything else the agent should always do?
+4. Ends with a short summary: the files it changed, and a reminder that this
+   was only a first draft for you to edit.
+
+These are the files it writes:
+
+| File | What it controls |
+| --- | --- |
+| `context-db/configuration/settings.md` | Shared settings |
+| `context-db/configuration/settings.local.md` | Your own settings, if you have any |
+| `context-db/configuration/ON_*.md` | The project's rules, added to each command |
+| `context-db/configuration/ON_*.local.md` | Your own rules, if you have any |
+| `AGENTS.md` or `CLAUDE.md` | The note that tells the agent about the knowledge base |
+
+:::{dropdown} The text the agent receives
+:color: secondary
+
+```{literalinclude} ../skill/context-db/prompts/configure.md
 :language: markdown
 ```
 :::
@@ -773,17 +774,6 @@ the uncommitted changes, and the commits that are not on the main branch.
 `--clear` sends its instructions, the list, `# How Work In Progress Is Kept`,
 and your rules.
 
-`/context-db configure` sends:
-
-| The agent sees | It comes from |
-| --- | --- |
-| `# Context-db Configure` | `prompts/configure.md` |
-| `# Detected State` | What the script found: the Python on your machine, the repository name, the main branch, the settings, and whether `AGENTS.md` or `CLAUDE.md` mention context-db. |
-| `# Current Rules` | The text of every ON file as it is now, so that the agent can show you what each one does. |
-| `# Project Rules` | `configuration/ON_CONFIGURE.md` |
-| `# User Rules` | `configuration/ON_CONFIGURE.local.md`, if you have one. |
-| `# User Instruction` | What you typed, if anything. |
-
 `/context-db maintain` sends:
 
 | The agent sees | It comes from |
@@ -801,6 +791,17 @@ and your rules.
 | `# File Format` | `prompts/format.md` |
 | `# Project Rules` | `configuration/ON_MAINTAIN.md` |
 | `# User Rules` | `configuration/ON_MAINTAIN.local.md`, if you have one. |
+| `# User Instruction` | What you typed, if anything. |
+
+`/context-db configure` sends:
+
+| The agent sees | It comes from |
+| --- | --- |
+| `# Context-db Configure` | `prompts/configure.md` |
+| `# Detected State` | What the script found: the Python on your machine, the repository name, the main branch, the settings, and whether `AGENTS.md` or `CLAUDE.md` mention context-db. |
+| `# Current Rules` | The text of every ON file as it is now, so that the agent can show you what each one does. |
+| `# Project Rules` | `configuration/ON_CONFIGURE.md` |
+| `# User Rules` | `configuration/ON_CONFIGURE.local.md`, if you have one. |
 | `# User Instruction` | What you typed, if anything. |
 
 An empty ON file adds no section, and neither does a missing one. With no

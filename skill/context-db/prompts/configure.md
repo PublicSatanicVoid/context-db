@@ -23,8 +23,8 @@ Everything it writes lives in `{conf_dir}/`:
   that is not a setting. The other commands stop on such a line, so offer to
   correct it in `{settings}` or `{local_settings}`, or tell the user which
   file to fix.
-- `ON_PROMPT.md`, `ON_UPDATE.md`, `ON_WIP.md`, `ON_CONFIGURE.md`,
-  `ON_MAINTAIN.md`: the project's rules, shared with everyone.
+- `ON_PROMPT.md`, `ON_UPDATE.md`, `ON_WIP.md`, `ON_MAINTAIN.md`,
+  `ON_CONFIGURE.md`: the project's rules, shared with everyone.
   Whatever a file says outside HTML comments is added to the instructions the
   agent receives each time that command runs.
 - `ON_PROMPT.local.md` and the like, one per command, only if the user wants

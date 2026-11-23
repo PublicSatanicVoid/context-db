@@ -6,22 +6,27 @@ Commands the user invokes. Each prints instructions that the calling agent
 follows; COMMAND_SUMMARIES below is the one-line description of each, shown by
 --help and repeated word for word in the README and on the docs home page.
 
-  prompt "<task>"         Before a task.
-  update ["<learning>"]   After a task, from what the session learned
+  prompt "<prompt>"       Before a question or task.
+  update ["<steering>"]   After a task, from what the session learned
                           (--commit / --push to commit too).
   wip ["<what>"]          During long work: record where it stands (--list,
                           --maintain, --clear).
-  configure               First, and whenever you like. With --project and the
-                          other setting flags it writes the files itself.
   maintain ["<scope>"]    Rarely: a spring cleaning of the whole knowledge base,
                           checked against the code and the git history.
+  configure               First, and whenever you like. With --project and the
+                          other setting flags it writes the files itself.
+
+configure is listed last wherever the commands are listed: here, in --help, and
+in the docs.
 
 No flag narrows what prompt, update, or maintain look at. Each covers all of
 the project's knowledge, and the user narrows or changes that in words, in the
 instruction. The commands are a starting point for a conversation.
 
-API below is the whole of it as the user types it. --help prints it, and the
-README and the docs home page repeat it.
+API below is what the user types. --help prints it, and the README and the
+docs home page repeat it. It leaves out update's --commit and --push on
+purpose: they are a convenience, a matter of preference, so only `update
+--help` and the Commands page describe them.
 
 Every one of them takes --show-context: print the same message, wrapped so that
 the agent shows it to the user and does not act on it.
@@ -111,7 +116,7 @@ WIP_LIST_NAME = "wip.md"
 INDEX_NAME = "index.md"
 RESERVED_FILES = (INDEX_NAME, "log.md")
 STATUSES = ("draft", "stable", "deprecated")
-ON_COMMANDS = ("prompt", "update", "wip", "configure", "maintain")
+ON_COMMANDS = ("prompt", "update", "wip", "maintain", "configure")
 AGENT_NOTE_FILES = ("AGENTS.md", "CLAUDE.md")
 # The three sizes behind progressive disclosure: what an agent reads before it
 # opens a file, what it loads when it does, and what it scans at each level.
@@ -133,52 +138,52 @@ SKILL_DIR = os.path.dirname(os.path.abspath(__file__))
 
 COMMAND_SUMMARIES = {
     "prompt": """
-Before a task. Looks up what the knowledge base says about it.
+Before a question or task. Navigates the Open Knowledge Format files of the
+knowledge base, based on what you ask.
 """,
     "update": """
 After a task. Writes down what this session learned, if the next agent would
-need it. Optional: --commit also commits, and --push commits and pushes.
+need it.
 """,
     "wip": """
 Optional, for long work. Keeps a short list of the work in progress. --list,
 --maintain, --clear.
-""",
-    "configure": """
-First, and whenever you like. Sets context-db up by asking a few questions;
-edit the files by hand afterwards.
 """,
     "maintain": """
 Rarely, as a spring cleaning. Goes through the whole knowledge base against
 the code and the git history: removes what the project already says and what
 is no longer needed, fixes what has drifted, and splits and reorganizes.
 """,
+    "configure": """
+First, and whenever you like. Sets context-db up by asking a few questions;
+edit the files by hand afterwards.
+""",
 }
 
 API = """
 Before a task
-  /context-db prompt <task>               look up what the knowledge base says
+  /context-db prompt <prompt: question or task>  navigate the OKF notes by what you ask
 
 After a task, from what this session learned
-  /context-db update                      write down what the next agent needs
-  /context-db update <lesson>             write down this in particular
-  /context-db update --commit             then commit; --push also pushes
+  /context-db update                             write down what the next agent needs
+  /context-db update <steering-guidance>         the same, steered by what you say
 
 During long work
-  /context-db wip                         write down where the work stands
-  /context-db wip --list                  show what is in progress
-  /context-db wip --maintain              check every plan, delete what has landed
-  /context-db wip --clear                 delete every plan
+  /context-db wip                                write down where the work stands
+  /context-db wip --list                         show what is in progress
+  /context-db wip --maintain                     check every plan, delete what has landed
+  /context-db wip --clear                        delete every plan
 
 Rarely, as a spring cleaning, checked against git
-  /context-db maintain                    cut what is stale, repeated, not needed
-  /context-db maintain <folder or topic>  only there
+  /context-db maintain                           cut what is stale, repeated, not needed
+  /context-db maintain <folder or topic>         only there
 
 First, and whenever you like
-  /context-db configure                   set up, or change how the agent behaves
+  /context-db configure                          set up, or change how the agent behaves
 
 On any command
-  --show-context                          show the message it sends, and stop
-  --help                                  its options
+  --show-context                                 show the message it sends, and stop
+  --help                                         its options
 """
 
 SHOW_CONTEXT = """
@@ -2088,6 +2093,8 @@ def build_parser():
     )
     modes.add_argument("--clear", action="store_true", help="Delete every plan, after asking")
 
+    command("maintain")
+
     p = command("configure")
     setting = p.add_argument_group(
         "settings", "Pass any of these to write the files directly, with no questions asked"
@@ -2116,8 +2123,6 @@ def build_parser():
         help=f"Per-user override, written to {LOCAL_SETTINGS_NAME} (repeatable)",
     )
 
-    command("maintain")
-
     # Left out of --help on purpose (no help= keyword): the agent runs it, and CI.
     p = subs.add_parser(
         "toc",
@@ -2140,8 +2145,8 @@ def main():
         "prompt": cmd_prompt,
         "update": cmd_update,
         "wip": cmd_wip,
-        "configure": cmd_configure,
         "maintain": cmd_maintain,
+        "configure": cmd_configure,
         "toc": cmd_toc,
     }
     if args.command not in handlers:

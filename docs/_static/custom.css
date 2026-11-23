@@ -24,9 +24,8 @@
   --pst-font-family-heading: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
-/* --cdb-prompt, -update, -maintain, -wip, -configure: one color per command, dark enough
-   to read as text. The theme gives dropdowns a fixed tint, so the two
-   --sd-color-*-bg lines point it at this palette. */
+/* The theme gives dropdowns a fixed tint, so the two --sd-color-*-bg lines
+   point it at this palette. */
 html[data-theme="light"] {
   --pst-color-primary: #1d4ed8;
   --pst-color-primary-bg: #dbeafe;
@@ -42,11 +41,6 @@ html[data-theme="light"] {
   --cdb-tint: #eff6ff;
   --cdb-tint-border: #bfdbfe;
   --cdb-code-bg: #f8fbff;
-  --cdb-prompt: #0f766e;
-  --cdb-update: #0369a1;
-  --cdb-maintain: #0b5cad;
-  --cdb-wip: #1d4ed8;
-  --cdb-configure: #4338ca;
 }
 
 html[data-theme="dark"] {
@@ -64,11 +58,6 @@ html[data-theme="dark"] {
   --cdb-tint: #131c33;
   --cdb-tint-border: #2a3f7a;
   --cdb-code-bg: #10172a;
-  --cdb-prompt: #2dd4bf;
-  --cdb-update: #38bdf8;
-  --cdb-maintain: #4fb0f9;
-  --cdb-wip: #60a5fa;
-  --cdb-configure: #818cf8;
 }
 
 /* Three soft patches of color behind the top of every page. */
@@ -214,38 +203,6 @@ section#context-db > h1 {
 
 .okf-line p {
   margin: 0;
-}
-
-/* One color per command. */
-.command-card {
-  border-radius: 0.75rem;
-  transition: transform 0.15s ease;
-}
-
-.command-card:hover {
-  transform: translateY(-3px);
-}
-
-.command-card .sd-card-title {
-  font-family: var(--pst-font-family-monospace);
-  font-size: 1.05rem;
-  color: var(--command-color);
-}
-
-.command-prompt {
-  --command-color: var(--cdb-prompt);
-}
-.command-update {
-  --command-color: var(--cdb-update);
-}
-.command-maintain {
-  --command-color: var(--cdb-maintain);
-}
-.command-wip {
-  --command-color: var(--cdb-wip);
-}
-.command-configure {
-  --command-color: var(--cdb-configure);
 }
 
 /* Code blocks look like small windows: three dots and a rule under them. */

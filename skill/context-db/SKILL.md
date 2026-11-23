@@ -2,7 +2,7 @@
 name: context-db
 description:
   'Project knowledge base in Open Knowledge Format. Sub-commands: prompt,
-  update, wip (optional), configure (run it first), maintain. Type --help for
+  update, wip (optional), maintain, configure (run it first). Type --help for
   usage.'
 allowed-tools: Bash,Read,Write,Edit,Glob,Grep
 ---
@@ -16,7 +16,7 @@ Run the script from the repository root with the user's arguments:
 otherwise the one in `context-db/configuration/settings.md`, otherwise
 `python3`.
 
-Sub-commands: `prompt`, `update`, `wip`, `configure`, `maintain`. With no
+Sub-commands: `prompt`, `update`, `wip`, `maintain`, `configure`. With no
 sub-command, or with `--help`, the script prints the list. Flags the user
 typed on the command's line, such as `--push`, `--list`, and
 `--show-context`, go outside the quotes. With no instruction, pass only the

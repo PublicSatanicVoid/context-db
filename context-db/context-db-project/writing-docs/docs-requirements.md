@@ -32,8 +32,12 @@ Added by the owner on 2026-11-11:
   owner said what goes in it on 2026-11-23: "context information is needed
   for large projects and context-db provides a system to manage large
   context, improving on large linear AGENTS.md file that have to be in every
-  time." The reasoning about what a note costs, and why agents write too
-  much, stays on the Commands page under the rule every command repeats.
+  time." It ends on what the owner asked for the same day: `update` and
+  `maintain` "help guide the agent to create concise, hierarchical
+  information that does not duplicate information that can be found by
+  reading the code, docs or other project assets". The reasoning about what a
+  note costs, and why agents write too much, stays on the Commands page under
+  the rule every command repeats.
   Migration is the owner's own task; its guide stays in this knowledge base
   and out of the docs.
 - On the Commands page, each command's section is headed by the full command,
@@ -47,13 +51,16 @@ Added by the owner on 2026-11-11:
   close to those words. The agent's own version ended "to understand and use
   yours", and the owner did not like how it ended.
   [voice.md](./voice.md) says why it reads usage information.
-  The Example of `prompt` and `update --push` comes straight after it: "The
-  example is useful closer to the top." Then "a bit more", under Two kinds of
-  knowledge: what each kind holds, how a project reads another project's
-  usage folder, and that its own knowledge comes first, in a few plain
-  sentences with no table. The rest is on the Layout page. What the owner
-  said of the longer opening this replaced is in [voice.md](./voice.md). The
-  Example is static; the owner asked for "not animated".
+- The Example of `prompt` and `update` comes straight after the lead: "The
+  example is useful closer to the top." It ends with a steered `update` typed
+  over several lines, which [voice.md](./voice.md) explains. It is static; the
+  owner asked for "not animated".
+- Then "a bit more", under Two kinds of knowledge, in a few plain sentences
+  with no table: what project knowledge holds, the owner's sentence on usage
+  knowledge ([usage-folders.md](../design-decisions/usage-folders.md)), how a
+  project reads another project's usage folder, and that its own knowledge
+  comes first. The rest is on the Layout page. What the owner said of the
+  longer opening this replaced is in [voice.md](./voice.md).
 - Sharing is a section of the Layout page, not a page of its own.
 - No logo in the header. The name there and the home page title both read
   `/context-db`.
@@ -74,9 +81,9 @@ Added by the owner on 2026-11-11:
   links to that section. The owner wrote its wording by hand on 2026-11-11,
   after rejecting a long list and then a list of one-liners: two or three plain
   sentences a bullet. Fix typos there, but do not rewrite it.
-- The commands section of both opens with the whole API in one block, and the
-  note that a command is a starting point. See
-  [command-set.md](../design-decisions/command-set.md).
+- The commands section of both opens with the API block, and the note that a
+  command is a starting point. Neither page mentions `--commit` or `--push`.
+  See [command-set.md](../design-decisions/command-set.md).
 - Colorful, but restrained. The owner had every gradient halved, the home page
   title cut down, and all type set 10% smaller, because the defaults read "a
   little big". The name in the header was already the right size. Lean smaller

@@ -490,7 +490,7 @@ def test_oversized_file_warns_but_wip_is_exempt(project):
 # ── Things every command shares ──────────────────────────────────────────────
 
 
-USER_COMMANDS = ("prompt", "update", "wip", "configure", "maintain")
+USER_COMMANDS = ("prompt", "update", "wip", "maintain", "configure")
 
 
 def help_commands(out):
@@ -567,18 +567,20 @@ def flat(markdown):
 
 
 def test_help_readme_and_docs_home_describe_the_commands_alike():
-    """The one-line summaries in the script are the README table and the docs cards."""
+    """The summaries in the script are one bullet list on both front pages, configure last."""
+    assert USER_COMMANDS[-1] == "configure"  # the owner: "configure should always be listed last"
+    assert tuple(context_db.COMMAND_SUMMARIES) == USER_COMMANDS
     summaries = {name: flat(context_db.COMMAND_SUMMARIES[name]) for name in USER_COMMANDS}
-    readme = (REPO / "README.md").read_text(encoding="utf-8")
-    rows = re.findall(r"(?m)^\| `/context-db (\w+)` \| (.+?) \|$", readme)
-    assert {name: flat(text) for name, text in rows} == summaries
-    assert tuple(name for name, _ in rows) == USER_COMMANDS
-    home = (REPO / "docs" / "index.md").read_text(encoding="utf-8")
-    cards = re.findall(
-        r"(?ms)^:::\{grid-item-card\} /context-db (\w+)\n(?::.*?\n)+\n(.+?)\n:::$", home
-    )
-    assert {name: flat(text) for name, text in cards} == summaries
-    assert tuple(name for name, _ in cards) == USER_COMMANDS
+    for path in (REPO / "README.md", REPO / "docs" / "index.md"):
+        page = path.read_text(encoding="utf-8")
+        items = re.findall(
+            r"(?ms)^- \[`/context-db (\w+)`\]\([^)]*#context-db-\1\):\n(.+?)(?=^- |\n\n)", page
+        )
+        assert {name: flat(text) for name, text in items} == summaries, path
+        assert tuple(name for name, _ in items) == USER_COMMANDS, path
+        assert "grid-item-card" not in page, path  # a plain list, not boxes
+    listed = re.findall(r"(?m)^    (\w+) ", run(REPO, "--help").stdout.split("options:")[0])
+    assert tuple(listed) == USER_COMMANDS
     commands = (REPO / "docs" / "commands.md").read_text(encoding="utf-8")
     sections = tuple(re.findall(r"(?m)^## /context-db (\w+)$", commands))
     assert sections == USER_COMMANDS
@@ -644,13 +646,15 @@ def test_the_docs_list_the_sections_each_command_sends(example):
 
 
 def test_help_readme_and_docs_home_show_the_whole_api():
-    """One block holds everything the user types. --help prints it; the front pages repeat it."""
+    """One block holds what the user types. --help prints it; the front pages repeat it."""
     api = context_db.API.strip("\n")
     assert api in run(REPO, "--help").stdout
     for path in (REPO / "README.md", REPO / "docs" / "index.md"):
         page = path.read_text(encoding="utf-8")
         assert f"```text\n{api}\n```" in page, path
         assert "Each command is a starting point." in page, path
+        # The owner: "very inside baseball". The Commands page has them, as a workflow.
+        assert "--commit" not in page and "--push" not in page, path
     typed = re.findall(r"(?m)^  /context-db (\w+)", api)
     assert set(typed) == set(USER_COMMANDS)
     for command in USER_COMMANDS:
@@ -658,6 +662,7 @@ def test_help_readme_and_docs_home_show_the_whole_api():
         flags = set(re.findall(r"--[\w-]+", usage))
         assert "--show-context" in flags, command
         if command != "configure":  # its setting flags are for the agent, and --help lists them
+            flags -= {"--commit", "--push"}  # left out of the block on purpose
             assert all(flag in api for flag in flags), (command, flags)
     commands = (REPO / "docs" / "commands.md").read_text(encoding="utf-8")
     assert "## A command is a starting point" in commands
@@ -1132,8 +1137,11 @@ def test_update_commit_and_push(project):
     assert commit.rstrip().endswith("note this")
     assert "Then push the current branch" in run(project, "update", "--push").stdout
     assert "# Commit" not in run(project, "update").stdout  # neither flag: no commit is asked for
-    summary = flat(context_db.COMMAND_SUMMARIES["update"])
-    assert "Optional: --commit also commits, and --push commits and pushes." in summary
+    # A convenience and a matter of preference: `update --help` has the two flags, the overview not.
+    usage = run(REPO, "update", "--help").stdout
+    assert "--commit" in usage and "--push" in usage
+    overview = run(REPO, "--help").stdout
+    assert "--commit" not in overview and "--push" not in overview
 
 
 def test_on_file_is_inlined_without_comments_or_frontmatter(project):

@@ -9,8 +9,9 @@ description:
 
 # The command set
 
-The owner fixed the set and the order on 2026-11-11: `prompt`, `update`, `wip`,
-`configure`, `maintain`. Use that order everywhere a list of commands appears.
+The owner fixed the set on 2026-11-11 and the order on 2026-11-23: `prompt`,
+`update`, `wip`, `maintain`, `configure`. "configure should always be listed
+last." Use that order everywhere a list of commands appears.
 
 ## No flag narrows a command
 
@@ -36,9 +37,11 @@ to say so: under the API block on the front page, and on the commands page.
 - Narrowing in words does not shorten the message. The script cannot read the
   instruction, so the agent skips the sections that are out of scope.
 
-Before changing the API again, show the owner the whole of it as typed, as the
-`API` block, and wait. A full build of scope flags on every command was thrown
-away the day it was made.
+Before changing what the commands or flags are, show the owner the whole of it
+as typed, as the `API` block, and wait. A full build of scope flags on every
+command was thrown away the day it was made. Wording that the owner dictates
+for the block is different: make the change, and show the whole block in the
+reply.
 
 ## maintain is a command again
 
@@ -83,14 +86,27 @@ flags, because showing must never write.
 
 ## One source for the summaries and the API block
 
-`COMMAND_SUMMARIES` in the script is what `--help` shows, and the README table
-and the docs home page cards repeat it word for word. A test compares all three
-and the section headings of `docs/commands.md`. Change the summary in the
-script, then copy it to both pages.
+`COMMAND_SUMMARIES` in the script is what `--help` shows, and a bullet list on
+the README and on the docs home page repeats it word for word. A test compares
+all three and the section headings of `docs/commands.md`. Change the summary
+in the script, then copy it to both pages. The list was a table and a row of
+colored cards until 2026-11-23, when the owner said: "Not sure we need these
+as callout boxes, just a bullet list."
 
-`API` in the script is everything the user types, in one block. The owner
-asked for "a code block ... which shows the whole api on the front page".
-`--help` prints it, both front pages repeat it, and a test compares them.
+`API` in the script is what the user types, in one block. The owner asked for
+"a code block ... which shows the whole api on the front page". `--help`
+prints it, both front pages repeat it, and a test compares them.
+
+- Its placeholders are the owner's (2026-11-23): `<prompt: question or task>`
+  and `<steering-guidance>`. So is the description of `prompt`: "Navigate the
+  context-db open knowledge format md files based on the contents of the
+  prompted question or task".
+- `--commit` and `--push` are left out of the block, the summaries, and both
+  front pages. The owner: "very inside baseball", a "personal preference not a
+  necessary feature", to be "left to the inner docs as helpful workflow". The
+  Commands page and `update --help` describe them. Dropping them from the
+  top-level `--help` too was the implementing agent's choice, so that the
+  front pages still repeat it word for word.
 
 ## Shared core text
 

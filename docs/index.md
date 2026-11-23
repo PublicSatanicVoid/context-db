@@ -40,14 +40,20 @@ cause and proposes a fix.
 When the work is done:
 
 ```text
-/context-db update --push
+/context-db update
 ```
 
-The agent writes down anything the next agent would need, then commits and
-pushes. Most of the time there is nothing to write down, and it says so.
+The agent writes down anything the next agent would need. Most of the time
+there is nothing to write down, and it says so.
 
-`--push` is optional. So is `--commit`, which commits and does not push. With
-neither, the agent leaves the commit to you.
+To steer it, say what you want on the lines after the command:
+
+```text
+/context-db update
+
+We talked a lot about how to use our custom grep tooling. Be sure to store
+this knowledge so the next agent can pick up where we left off.
+```
 
 ## Two kinds of knowledge
 
@@ -55,12 +61,11 @@ Project knowledge is internal: the decisions and their reasons, the
 conventions, the pitfalls, the plans. It drives the work from day to day, and
 nobody outside the project needs it.
 
-Usage knowledge is external, and optional: where to start, the rules a caller
-must follow, the mistakes users make. It is to agents in other projects what
-your docs are to people.
+Usage knowledge is external, and optional. It is the docs and API of your
+project, expressed in OKF format and designed to be consumed by other
+projects. Nobody needs context-db to read it, since it is plain OKF Markdown.
 
-The two work together, because both are folders of short notes in the same
-format. A project that uses yours mounts your
+A project that does use context-db mounts your
 [usage folder](layout.md#usage-folders),
 and its agent reads those notes the same way it reads its own. Its own
 knowledge still comes first. It looks into yours when a task involves your
@@ -132,33 +137,32 @@ files and one Python script.
 
 ## The commands
 
-All of it, as you type it:
+The commands, as you type them:
 
 ```text
 Before a task
-  /context-db prompt <task>               look up what the knowledge base says
+  /context-db prompt <prompt: question or task>  navigate the OKF notes by what you ask
 
 After a task, from what this session learned
-  /context-db update                      write down what the next agent needs
-  /context-db update <lesson>             write down this in particular
-  /context-db update --commit             then commit; --push also pushes
+  /context-db update                             write down what the next agent needs
+  /context-db update <steering-guidance>         the same, steered by what you say
 
 During long work
-  /context-db wip                         write down where the work stands
-  /context-db wip --list                  show what is in progress
-  /context-db wip --maintain              check every plan, delete what has landed
-  /context-db wip --clear                 delete every plan
+  /context-db wip                                write down where the work stands
+  /context-db wip --list                         show what is in progress
+  /context-db wip --maintain                     check every plan, delete what has landed
+  /context-db wip --clear                        delete every plan
 
 Rarely, as a spring cleaning, checked against git
-  /context-db maintain                    cut what is stale, repeated, not needed
-  /context-db maintain <folder or topic>  only there
+  /context-db maintain                           cut what is stale, repeated, not needed
+  /context-db maintain <folder or topic>         only there
 
 First, and whenever you like
-  /context-db configure                   set up, or change how the agent behaves
+  /context-db configure                          set up, or change how the agent behaves
 
 On any command
-  --show-context                          show the message it sends, and stop
-  --help                                  its options
+  --show-context                                 show the message it sends, and stop
+  --help                                         its options
 ```
 
 Each command is a starting point. It opens the conversation with the
@@ -166,7 +170,8 @@ instructions you would otherwise type yourself every time. That is all
 context-db does: it saves you from saying the same things over and over.
 `prompt`, `update`, and `maintain` cover the whole knowledge base, and no flag
 narrows them. To narrow one, or to change how it works, say so in plain words
-on the line after it, or at any point later in the conversation:
+on the lines after it, as many as you like, or at any point later in the
+conversation:
 
 ```text
 /context-db update
@@ -179,54 +184,22 @@ the knowledge base with the code and the git history. Either can be told
 otherwise: ask `update` to read a `git diff` as well, or `maintain` to leave
 git out. [A command is a starting point](commands.md#a-command-is-a-starting-point) has more examples.
 
-::::{grid} 1 1 1 1
-:gutter: 3
-
-:::{grid-item-card} /context-db prompt
-:class-card: command-card command-prompt
-:link: commands
-:link-type: doc
-
-Before a task. Looks up what the knowledge base says about it.
-:::
-
-:::{grid-item-card} /context-db update
-:class-card: command-card command-update
-:link: commands
-:link-type: doc
-
-After a task. Writes down what this session learned, if the next agent would
-need it. Optional: `--commit` also commits, and `--push` commits and pushes.
-:::
-
-:::{grid-item-card} /context-db wip
-:class-card: command-card command-wip
-:link: commands
-:link-type: doc
-
-Optional, for long work. Keeps a short list of the work in progress. `--list`,
-`--maintain`, `--clear`.
-:::
-
-:::{grid-item-card} /context-db configure
-:class-card: command-card command-configure
-:link: commands
-:link-type: doc
-
-First, and whenever you like. Sets context-db up by asking a few questions; edit
-the files by hand afterwards.
-:::
-
-:::{grid-item-card} /context-db maintain
-:class-card: command-card command-maintain
-:link: commands
-:link-type: doc
-
-Rarely, as a spring cleaning. Goes through the whole knowledge base against the
-code and the git history: removes what the project already says and what is no
-longer needed, fixes what has drifted, and splits and reorganizes.
-:::
-::::
+- [`/context-db prompt`](commands.md#context-db-prompt):
+  Before a question or task. Navigates the Open Knowledge Format files of the
+  knowledge base, based on what you ask.
+- [`/context-db update`](commands.md#context-db-update):
+  After a task. Writes down what this session learned, if the next agent would
+  need it.
+- [`/context-db wip`](commands.md#context-db-wip):
+  Optional, for long work. Keeps a short list of the work in progress.
+  `--list`, `--maintain`, `--clear`.
+- [`/context-db maintain`](commands.md#context-db-maintain):
+  Rarely, as a spring cleaning. Goes through the whole knowledge base against
+  the code and the git history: removes what the project already says and what
+  is no longer needed, fixes what has drifted, and splits and reorganizes.
+- [`/context-db configure`](commands.md#context-db-configure):
+  First, and whenever you like. Sets context-db up by asking a few questions;
+  edit the files by hand afterwards.
 
 `/context-db --help` prints the same list.
 
@@ -317,9 +290,13 @@ The idea builds on Andrej Karpathy's
 have the LLM keep a wiki of what it has learned, instead of working everything
 out again each time.
 
-The point is to give the agent the right amount of context, so every command
-that writes tells it to leave out what the code already says, and to delete
-what is no longer needed.
+`update` and `maintain` guide the agent to keep the knowledge base concise and
+hierarchical, and never to duplicate what it can find by reading the code, the
+docs, or the project's other assets. `update` writes down only what the next
+agent would get wrong without it, and most sessions add nothing. `maintain`
+goes back over everything: it cuts what has gone stale and what repeats the
+code, and splits what has grown into shorter files and deeper folders, so
+that the right note stays easy to find.
 [The rule every command repeats](commands.md#the-rule-every-command-repeats) has the exact text.
 
 ```{toctree}

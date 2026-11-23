@@ -76,10 +76,11 @@ comment next to it. Every command repeats this rule to the agent;
 
 The project folder holds project knowledge, for agents working on your project.
 A usage folder holds usage knowledge, for agents working in other projects that
-use yours. It is to them what your docs are to people. It is written in the
-same format as the rest of the knowledge base, so an agent in a project that
-uses yours reads it the way it reads its own notes: one line of description
-first, and a file only when the task calls for it.
+use yours: your docs and API as those agents need them, expressed in OKF
+format. It is written in the same format as the rest of the knowledge base, so
+an agent in a project that uses yours reads it the way it reads its own notes:
+one line of description first, and a file only when the task calls for it.
+Nobody needs context-db to read it, since it is plain OKF Markdown.
 
 A usage folder holds the bare minimum such an agent needs to know to use your
 project: where to start, which way in is right for which job, the rules a
