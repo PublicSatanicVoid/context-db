@@ -358,7 +358,7 @@ def test_a_folder_that_comes_with_an_index_is_listed_from_it(project):
     assert listing.startswith(
         "# Contents of `context-db/catalog/`\n\nRead from `context-db/catalog/index.md`, the index"
     )
-    assert "context-db.py toc <subfolder>" in listing
+    assert "context-db.py toc <path>" in listing
     assert "* [Orders](context-db/catalog/orders.md) - All about orders" in listing
     assert "* [Billing](context-db/catalog/billing/) - Invoices and rates" in listing
     assert "(https://example.com/spec#tables)" in listing and "[the top](#tables)" in listing

@@ -353,7 +353,7 @@ guide before step 2: {guide}
 TOC_HEADING = """
 # Contents of `{folder}/`
 
-Read from its files just now. To look inside a subfolder, run `{toc_cmd} <subfolder>`.
+Read from its files just now. To look inside a subfolder, run `{toc_cmd} <path>`, with the path exactly as it appears in the subfolder's link below.
 """
 
 TOC_KEEPS_INDEX = """
@@ -363,7 +363,7 @@ This folder also keeps an index file, `{index}`, for people and for other tools.
 TOC_FROM_INDEX = """
 # Contents of `{folder}/`
 
-Read from `{index}`, the index file this folder came with from its owner, with its links rewritten to start from the current directory. To look inside a subfolder, run `{toc_cmd} <subfolder>`.
+Read from `{index}`, the index file this folder came with from its owner, with its links rewritten to start from the current directory. To look inside a subfolder, run `{toc_cmd} <path>`, with the path exactly as it appears in the subfolder's link below.
 """
 
 TOC_EMPTY = """
@@ -2097,7 +2097,11 @@ def cmd_toc(args):
     if args.folder:
         folder = os.path.normpath(args.folder)
         if not os.path.isdir(folder):
-            sys.exit(f"Error: {folder}/ is not a folder.")
+            sys.exit(
+                f"Error: {folder}/ is not a folder. Pass the path exactly as listed in a "
+                "table of contents; it is relative to the current directory, not to the "
+                "folder that was listed."
+            )
         bundles = [bundle_root(folder)]
     else:
         config = require_config(cdb, args)
