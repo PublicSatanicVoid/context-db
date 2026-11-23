@@ -43,7 +43,8 @@ option. Every question also accepts an answer the user types.
 
 If `{settings}` already exists, begin by asking what the user wants to do: go
 through the questions again, change one thing (ask which), or only check that
-everything is in order (go to Finish). Do only what they pick.
+everything is in order (go to Finish). Do only what they pick. Do not ask if
+the user instruction at the end of this output already says.
 
 ## Settings
 
@@ -181,8 +182,9 @@ Make each change as soon as the user answers, and show them the new text.
     folder, delete the `usage_folders` line from `{settings}` if it has one.
     If a usage folder already exists in the old place, move it to the new
     one. Create each one that does not exist yet with only its descriptor,
-    `<folder>/<folder name>.md`, whose `description` says what this project
-    is. `/context-db update` fills it.
+    `<folder>/<folder name>.md`: frontmatter with `type: Folder` and a
+    `description` that says what this project is. `/context-db update` fills
+    it.
 13. **Anything else.** Tell the user in a sentence per file what the ON files
     make the agent do now. Then ask: "Is there anything else the agent should
     always do?" Options: no (recommended); yes, for `prompt` (while it works),

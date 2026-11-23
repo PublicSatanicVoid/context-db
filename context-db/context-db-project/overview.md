@@ -26,7 +26,7 @@ and uses it on its own `context-db/`.
 - The docs site includes the prompt files verbatim, so changing a prompt changes
   the docs. See [writing-docs/](./writing-docs/writing-docs.md) before editing docs.
 - Run `.venv/bin/python -m pytest tests` after changing the script, a prompt,
-  the example, or the migration script. One test needs PyYAML and is skipped
+  the example, or the migration script. Two tests need PyYAML and are skipped
   without it.
 - The example under `example/` is a real, runnable project. Tests execute
   against a copy of it, so keep it lint-clean.

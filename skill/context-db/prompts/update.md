@@ -68,8 +68,9 @@ that agent would not miss. Then run:
 
     {check_cmd}
 
-It checks the format of the project folder and of every usage folder. Fix what
-your change caused, and run it again until that is clean. If it reports problems in files you did
+It checks the format of the project folder, and of each usage folder that is
+kept outside it. Fix what your change caused, and run it again until that is
+clean. If it reports problems in files you did
 not touch, leave them, and mention them in one line with a suggestion to run
 `/context-db maintain`.
 

@@ -1509,7 +1509,7 @@ def cmd_prompt(args):
     emit(
         args,
         [
-            load_prompt("prompt", cdb=cdb, project_dir=project_dir(cdb, config)),
+            load_prompt("prompt", cdb=cdb),
             navigate_section(config),
             load_prompt("not-a-mirror"),
             wip_section(cdb, config, WIP_FOR_PROMPT, show_empty=False, on_branch=on_branch),
@@ -1548,7 +1548,6 @@ def cmd_update(args):
     sections = [
         load_prompt(
             "update",
-            cdb=cdb,
             project_dir=project_dir(cdb, config),
             usage_thought="\n" + text(USAGE_THOUGHT) if usage else "",
             usage_home=text(USAGE_HOME if usage else NO_USAGE_HOME, **names),

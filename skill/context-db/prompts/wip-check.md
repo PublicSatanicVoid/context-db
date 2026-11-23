@@ -17,7 +17,8 @@ merged has not landed.
 - A plan whose work has not landed stays, even when a step is done. Record
   the step as done in a line, cut its detail, and update the status on the
   plan's line in the list.
-- A plan for a different branch, or one whose state you cannot judge from
-  the evidence, stays. Ask the user about it.
+- A plan for a different branch, for a branch that no longer exists, or one
+  whose state you cannot judge from the evidence, stays. Ask the user whether
+  its work was merged, was dropped, or is still going.
 - A plan the list does not mention gets a line, or is deleted if it is
   finished.

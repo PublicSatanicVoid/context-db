@@ -104,10 +104,11 @@ Weaknesses that remain:
   context entry helps or hurts without expensive ablation testing. Harmful
   entries persist until someone notices.
 - **Content is still treated as instructions.** Even well-framed context-db
-  entries anchor the model. There is no way to mark content as "background,
-  trust code over this if they conflict."
-- **The system rewards comprehensiveness, but performance rewards minimalism.**
-  Every instinct says add more. The research says add less.
+  entries anchor the model. `prompt` tells the agent to treat the knowledge
+  base as a map and to trust the code where the two conflict. That is wording,
+  and nothing enforces it.
+- **Performance rewards minimalism, and every instinct says add more.** The
+  keep-small rule and `maintain` push the other way, by instruction only.
 
 ## Evidence from production systems
 
