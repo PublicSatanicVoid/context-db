@@ -584,15 +584,20 @@ def test_help_readme_and_docs_home_describe_the_commands_alike():
     assert sections == USER_COMMANDS
 
 
-def test_readme_and_docs_home_open_with_the_two_kinds_of_knowledge():
-    """The owner wants the two kinds, and how they work together, explained before anything else."""
+def test_readme_and_docs_home_open_alike_and_briefly():
+    """The owner's opening: the two kinds in one sentence, the Example, then a few plain lines."""
     openings = []
     for path in (REPO / "README.md", REPO / "docs" / "index.md"):
-        opening = path.read_text(encoding="utf-8").split("## Example")[0]
-        section = opening.split("## Two kinds of knowledge")[1]
-        assert "| | Project knowledge | Usage knowledge |" in section, path
-        assert "Your own project knowledge still comes first." in section, path
-        openings.append(re.sub(r"\]\([^)]*\)", "]()", section))  # only the links differ
+        opening = path.read_text(encoding="utf-8").split("## Benefits")[0]
+        intro, rest = opening.split("## Example")
+        two_kinds = rest.split("## Two kinds of knowledge")[1]
+        said = flat(intro)
+        assert "A set of skills for coding agents. context-db helps you manage" in said, path
+        assert "It also provides a framework for managing usage knowledge" in said, path
+        assert "|" not in two_kinds, path  # the owner found a table here "weird"
+        assert len(two_kinds.split()) < 160, path  # and twice this much "too detailed"
+        assert "own knowledge still comes first" in flat(two_kinds), path
+        openings.append(re.sub(r"\]\([^)]*\)", "]()", rest))  # only the links differ
     assert openings[0] == openings[1]
 
 

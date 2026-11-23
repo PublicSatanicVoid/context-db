@@ -22,7 +22,9 @@ easily within a project".
   [command-set.md](./command-set.md).
 - The terms are project knowledge and usage knowledge. See
   [voice.md](../writing-docs/voice.md).
-- The README and the docs home page explain the two "right at the start".
+- The README and the docs home page name the two "right at the start", in
+  a sentence. See
+  [docs-requirements.md](../writing-docs/docs-requirements.md).
 - A project reads another's usage knowledge "as easily as it's own internal
   project knowledge", and its own is privileged, "more top of mind". So
   `prompt.md` tells the agent to start with the project folder on every task,

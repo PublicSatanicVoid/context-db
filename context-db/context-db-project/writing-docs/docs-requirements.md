@@ -32,11 +32,18 @@ Added by the owner on 2026-11-11:
   owner's own task; its guide stays in this knowledge base and out of the docs.
 - On the Commands page, each command's section is headed by the full command,
   such as `/context-db update`.
-- The home page and the README open with Two kinds of knowledge: the two
-  terms, how a project reads another project's usage folder, and that its own
-  project knowledge comes first. The owner asked on 2026-11-22 for this "right
-  at the start". A short Example of `prompt` and `update --push` follows it,
-  before Install. It is static; the owner asked for "not animated".
+- The home page and the README open with the owner's own sentence, which
+  names the two kinds of knowledge (2026-11-23): "context-db helps you manage
+  project context knowledge needed for development and maintenance. In
+  addition, provides a framework for managing usage information other projects
+  can use to understand and use your project." Keep it close to those words.
+  The Example of `prompt` and `update --push` comes straight after it: "The
+  example is useful closer to the top." Then "a bit more", under Two kinds of
+  knowledge: what each kind holds, how a project reads another project's
+  usage folder, and that its own knowledge comes first, in a few plain
+  sentences with no table. The rest is on the Layout page. What the owner
+  said of the longer opening this replaced is in [voice.md](./voice.md). The
+  Example is static; the owner asked for "not animated".
 - Sharing is a section of the Layout page, not a page of its own.
 - No logo in the header. The name there and the home page title both read
   `/context-db`.

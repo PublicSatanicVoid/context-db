@@ -288,6 +288,16 @@ section#context-db > h1 {
   border-bottom: 2px solid var(--cdb-blue);
 }
 
+/* On a phone, one long piece of inline code in a cell made the table wider
+   than the screen and hid its last column. There, let the code break. */
+@media (max-width: 575.98px) {
+  .bd-article table.table code.literal,
+  .bd-article table.table code.literal .pre {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+}
+
 /* Quotes from the instruction files. */
 .bd-article blockquote {
   border-left: 4px solid var(--cdb-teal);

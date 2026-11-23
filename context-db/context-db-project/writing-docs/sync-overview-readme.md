@@ -13,8 +13,8 @@ description:
 | `docs/index.md`                            | Docs site        | yes                  |
 | `context-db/<project>-project/overview.md` | Agents           | no, and 20–40 lines  |
 
-The README and the docs home page share their opening, "Two kinds of
-knowledge", "Example", "Benefits", "Install", "What it is", the commands, and
+The README and the docs home page share their opening, "Example", "Two kinds
+of knowledge", "Benefits", "Install", "What it is", the commands, and
 "Motivation" almost word for word.
 Only the links differ: full site URLs in the README, relative ones on the home
 page. The

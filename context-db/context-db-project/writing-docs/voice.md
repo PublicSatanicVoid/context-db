@@ -15,6 +15,12 @@ On 2026-11-10 the repository owner said of earlier docs: "I have found them very
 AI written, not clear. I just want it clear simple." And: "Really, this is a set
 of skills, be clear what it is."
 
+On 2026-11-23, of a section that opened the home page by explaining the two
+kinds of knowledge with a five-row comparison table and four paragraphs: "too
+detailed, the table was weird. Too explicit. We can be more simple." And, when
+the agent set about cutting it to a stub: "the info you had was good, it was
+just too detailed and too soon in the page."
+
 ## What that means in practice
 
 This list is an interpretation of that feedback, drawn from what was removed in
@@ -30,6 +36,9 @@ the v0.1 rewrite of the docs.
 - No "not X but Y" constructions and no lists of three for rhythm.
 - No filler words: simply, just, seamlessly, powerful, robust, deliberately.
 - Prefer a paragraph or a small table to a page of tiny headed sections.
+- On the home page and the README, give an idea a few plain sentences. Keep
+  the substance, cut the detail, and link to the page that has it. Do not lay
+  out every property of a thing in a table.
 
 ## Showing a command
 

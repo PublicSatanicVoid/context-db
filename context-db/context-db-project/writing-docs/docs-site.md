@@ -56,10 +56,11 @@ tried and not adopted stay in the picker for later.
   and the card body paints its own background. A border, shadow, or background
   on `.command-card` does nothing unless the selector starts with `.bd-content`.
   A top stripe sat in the CSS for days without ever showing.
-- Inline code in a table cell does not wrap. With a long piece of it, the
-  table scrolls sideways inside its container on a phone and its last column
-  is cut off, while the page itself reports no overflow. Keep code in table
-  cells short, and look at the table at 390px.
+- A table wider than a phone screen scrolls sideways inside its container and
+  its last column is cut off, while the page itself reports no overflow. So
+  compare each table with its container at 390px, not the page with the
+  screen. Long inline code is the usual cause: it does not wrap, except in a
+  table cell on a phone, where `custom.css` lets it break.
 - Every page is top level, so `html_sidebars` is emptied. A page added inside a
   subfolder needs that revisited.
 - Link colors are set per theme in `custom.css`. Check a new color in both light

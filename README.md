@@ -1,49 +1,15 @@
 # context-db
 
-A set of skills for coding agents. They keep a knowledge base for your project
-as Markdown files in your repo, and tell the agent when to read it and when to
-add to it.
+A set of skills for coding agents. context-db helps you manage the project
+knowledge needed for development and maintenance, kept as short Markdown notes
+in your repo. It also provides a framework for managing usage knowledge: the
+information other projects need to understand and use yours.
 
 **Built on the [Open Knowledge Format](https://github.com/GoogleCloudPlatform/open-knowledge-format)
 (OKF)**, an open standard for knowledge that agents can read.
 [What OKF is, where it came from, and how context-db uses it](https://cart0113.github.io/context-db/okf.html).
 
 Documentation: <https://cart0113.github.io/context-db/>
-
-## Two kinds of knowledge
-
-context-db keeps two kinds of knowledge, because they have two readers.
-
-| | Project knowledge | Usage knowledge |
-| --- | --- | --- |
-| Who it is for | Agents working on your project | Agents in other projects that use yours |
-| What it holds | Decisions and their reasons, conventions, pitfalls, plans | Where to start, the rules for calling your project, the mistakes its users make |
-| Where it is kept | The project folder, `<name>-project/`, in `context-db/` | A [usage folder](https://cart0113.github.io/context-db/layout.html#usage-folders), `<name>-usage/`. There can be several. |
-| What writes it | `update`, `wip`, and `maintain` | `update` and `maintain` |
-| When it is read | First, on every task in your project | In a project that uses yours, when a task there involves your project |
-
-Project knowledge is internal. It drives the work on your project from day to
-day, and nobody outside the project needs it. Usage knowledge is external. It
-is to agents in other projects what your docs are to people, and it is
-optional.
-
-The two work together, because both are folders of short notes in the same
-format. A project
-[mounts the usage folders of the projects it uses, or finds them with one line of settings](https://cart0113.github.io/context-db/layout.html#how-another-project-reads-it).
-From then on every `/context-db prompt` lists them next to its own project
-folder, and the agent looks into one the same way it looks into its own notes.
-So what another project says about using it is as easy to reach as what your
-project knows about itself.
-
-Your own project knowledge still comes first. The agent starts there on every
-task, because it applies to everything done in your repository. It looks into
-another project's usage folder when the task involves that project, and before
-it reads that project's code.
-
-Both are standard OKF. The index of each folder is built on the fly from its
-notes, so by default neither kind has `index.md` files to keep in step. You can
-[keep `index.md` files as well](https://cart0113.github.io/context-db/layout.html#keeping-index-md-files-anyway),
-and context-db works with both.
 
 ## Example
 
@@ -76,6 +42,23 @@ pushes. Most of the time there is nothing to write down, and it says so.
 
 `--push` is optional. So is `--commit`, which commits and does not push. With
 neither, the agent leaves the commit to you.
+
+## Two kinds of knowledge
+
+Project knowledge is internal: the decisions and their reasons, the
+conventions, the pitfalls, the plans. It drives the work on your project from
+day to day, and nobody outside the project needs it.
+
+Usage knowledge is external, and optional: where to start, the rules for
+calling your project, the mistakes its users make. It is to agents in other
+projects what your docs are to people.
+
+The two work together, because both are folders of short notes in the same
+format. A project that uses yours mounts your
+[usage folder](https://cart0113.github.io/context-db/layout.html#usage-folders),
+and its agent reads those notes the same way it reads its own. That project's
+own knowledge still comes first. Its agent looks into yours when a task
+involves your project, before it reads your code.
 
 ## Benefits
 
