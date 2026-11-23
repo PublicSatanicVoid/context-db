@@ -35,6 +35,9 @@ skills. You can also run any command yourself from a terminal:
 python3 .claude/skills/context-db/context-db.py --help
 ```
 
+To have a `context-db` command instead, install the repository with
+`pip install .`. It runs the same script.
+
 ## 2. Set it up
 
 In Claude Code, type:

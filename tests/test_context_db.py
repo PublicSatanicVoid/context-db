@@ -2269,3 +2269,15 @@ def test_migrating_a_v0_tree_ends_lint_clean(tmp_path):
     assert init.returncode == 0, init.stdout
     assert "Be careful." in run(tmp_path, "prompt", "x").stdout
     assert not list(bundle.rglob("index.md"))
+
+
+def test_the_packaged_entry_point_runs_the_script_beside_it(tmp_path):
+    """pyproject.toml installs skill/context-db/cli.py's main() as the `context-db` command."""
+    entry = SCRIPT.parent / "cli.py"
+    expected = run(tmp_path, "--help")
+    result = run(tmp_path, "--help", script=entry)
+    assert result.returncode == 0, result.stdout
+    assert result.stdout.replace("cli.py", "context-db.py") == expected.stdout
+    configured = run(tmp_path, "configure", "--project", "demo", script=entry)
+    assert configured.returncode == 0, configured.stdout
+    assert (tmp_path / "context-db" / "configuration" / "settings.md").is_file()
