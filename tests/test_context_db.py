@@ -579,7 +579,8 @@ def test_help_readme_and_docs_home_describe_the_commands_alike():
         assert {name: flat(text) for name, text in items} == summaries, path
         assert tuple(name for name, _ in items) == USER_COMMANDS, path
         assert "grid-item-card" not in page, path  # a plain list, not boxes
-    listed = re.findall(r"(?m)^    (\w+) ", run(REPO, "--help").stdout.split("options:")[0])
+    # Python 3.8 puts a name as long as "configure" on a line of its own, with no space after it.
+    listed = re.findall(r"(?m)^    (\w+)(?: |$)", run(REPO, "--help").stdout)
     assert tuple(listed) == USER_COMMANDS
     commands = (REPO / "docs" / "commands.md").read_text(encoding="utf-8")
     sections = tuple(re.findall(r"(?m)^## /context-db (\w+)$", commands))
