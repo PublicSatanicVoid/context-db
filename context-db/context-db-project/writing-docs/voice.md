@@ -72,7 +72,7 @@ their own". The credit to Karpathy and the OKF history stay.
 
 The owner chose "project" and "usage" for the two kinds of knowledge on
 2026-11-22, over internal / external and development / usage. They are the
-names of the folders, the flag, and the setting, so nothing had to be renamed,
+names of the folders and the setting, so nothing had to be renamed,
 and "external" also reads as knowledge that comes from outside, which is what a
 background folder is. "Internal" and "external" may explain the two once, as
 the README does.

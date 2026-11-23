@@ -1,24 +1,21 @@
 ---
 type: Convention
 description:
-  context-db-specific coding standards — overrides and additions to
-  general-coding-standards. No shims, no defensive .get(), agent-facing text in
-  prompts/ or triple-quoted constants, "project assets" framing.
+  context-db-specific coding standards — no shims, no defensive .get(),
+  agent-facing text in prompts/ or triple-quoted constants, "project assets"
+  framing. They override any general coding standards that are mounted.
 ---
 
 # context-db Project Coding Standards
 
-These supplement (and can override) the general coding standards in
-`general-coding-standards/`.
+These add to, and can override, any general coding standards mounted as a
+background folder.
 
 ## No backward compatibility shims
 
 When renaming or restructuring, update directly. Do not add shims, aliases, or
 fallback handling that supports old names alongside new ones. If callers need
 updating, update them. Shims accumulate and create two systems to maintain.
-
-This applied when renaming modes (ask → user-prompt, review → code-review, scope
-→ review-type): every reference was updated, no old-name fallbacks added.
 
 ## No defensive `.get()` calls
 

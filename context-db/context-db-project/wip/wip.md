@@ -8,8 +8,6 @@ description:
 
 # Work in progress
 
-- [v0.1 cutover](v0.1-cutover.md). Started 2026-11-10 on `v0.1`. Rewrite landed; migrating real projects next.
-
 <!--
 One line per effort, linking its plan. /context-db wip keeps this list.
 Example:

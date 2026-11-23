@@ -7,11 +7,11 @@ description:
 
 # README, docs home page, agent overview
 
-| File                                       | Audience         | Sync? | Typical size  |
-| ------------------------------------------ | ---------------- | ----- | ------------- |
-| `README.md`                                | Humans on GitHub | yes   | 150–200 lines |
-| `docs/index.md`                            | Docs site        | yes   | 100–200 lines |
-| `context-db/<project>-project/overview.md` | Agents           | no    | 20–40 lines   |
+| File                                       | Audience         | Sync?                |
+| ------------------------------------------ | ---------------- | -------------------- |
+| `README.md`                                | Humans on GitHub | yes                  |
+| `docs/index.md`                            | Docs site        | yes                  |
+| `context-db/<project>-project/overview.md` | Agents           | no, and 20–40 lines  |
 
 The README and the docs home page share their opening, "Two kinds of
 knowledge", "Example", "Benefits", "Install", "What it is", the commands, and

@@ -5,6 +5,8 @@ description:
   from knowledge graph research
 ---
 
+# Cross-references
+
 ## The problem
 
 A tree has no lateral edges. If error-handling guidance lives in

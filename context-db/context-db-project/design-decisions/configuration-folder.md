@@ -22,10 +22,10 @@ is free for the user's notes and `configure` preserves it. `settings.local.md` i
 gitignored and overrides any key for one user (typically an interpreter path).
 
 The key set is closed: each key answers something the script cannot work out.
-A new key needs that same justification. Four keys are optional: two for
-[global context](./global-context.md), `usage_folders` (see
-[usage-folders.md](./usage-folders.md)), and `settings_files`, which names
-more settings files that override this one.
+A new key needs that same justification. Three keys are optional:
+`global_context` (see [global-context.md](./global-context.md)),
+`usage_folders` (see [usage-folders.md](./usage-folders.md)), and
+`settings_files`, which names more settings files that override this one.
 
 A line that is not a setting stops every command but `configure`, which marks
 it. The implementing agent chose that on 2026-11-22, when `usage_folder`

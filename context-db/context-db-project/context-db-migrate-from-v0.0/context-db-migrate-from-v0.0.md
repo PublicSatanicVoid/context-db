@@ -14,6 +14,9 @@ this repository on the `v0.1` branch; the old system is on its `v0.0` branch. Do
 the work on a new branch of the project and commit at the end. Ask the user
 before deleting anything that is not plainly obsolete.
 
+No real project had been migrated with this guide by 2026-11-23, only a copy
+of the v0.0 tree. Tell the user wherever it leaves you guessing.
+
 ## What changed
 
 | v0.0                                                     | v0.1                                                     |

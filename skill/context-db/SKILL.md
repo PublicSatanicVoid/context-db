@@ -22,8 +22,9 @@ typed on the command's line, such as `--push`, `--list`, and
 `--show-context`, go outside the quotes. With no instruction, pass only the
 flags.
 
-Pass the user's instruction exactly as they typed it, as one single-quoted
-argument. Single quotes stop the shell from changing `$`, backticks, and `!`:
+Pass the user's instruction exactly as they typed it, line breaks included, as
+one single-quoted argument. Single quotes stop the shell from changing `$`,
+backticks, and `!`:
 
     <python> .claude/skills/context-db/context-db.py update 'Refunds over $10,000 need approval' --push
 

@@ -360,4 +360,4 @@ This repository uses its own skills on its own `context-db/` folder.
 
 ## License
 
-MIT
+MIT. See [LICENSE](LICENSE).

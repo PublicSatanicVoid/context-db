@@ -52,6 +52,4 @@ just a repo's `context-db/` and separate committed and private configs.
 ## This repository's own mounts
 
 `.gitignore` lists several `context-db/<name>` entries. They are the owner's
-private mounts and exist only on their machine. `context-db/writing-effective-skills`
-is a committed symlink into a sibling repository, so it is broken in any clone
-that lacks that sibling; `prompt` reports it and moves on.
+private mounts and exist only on their machine, so leave those lines in place.

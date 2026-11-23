@@ -12,9 +12,9 @@ Every `.md` file in the knowledge base starts with YAML frontmatter:
 - `type` is required. It says what kind of knowledge the file holds, and the
   Open Knowledge Format requires it. Use one of `Decision`, `Convention`,
   `Rule`, `Architecture`, `Gotcha`, `Reference`, `Research`, `Plan`, or
-  `Folder`. A `Rule` is a requirement imposed on the project, such as a business
-  or compliance rule; a `Convention` is how the team chooses to do things. Coin
-  a new type only when none fits.
+  `Folder`. A `Rule` is a requirement imposed on the project or on those who
+  use it, such as a business or compliance rule; a `Convention` is how the
+  team chooses to do things. Coin a new type only when none fits.
 - `description` is required. It is the only thing an agent sees before deciding
   whether to open the file, so be specific: "scheduler execution flow, budget
   enforcement hook", not "Architecture overview". Include alternative terms when

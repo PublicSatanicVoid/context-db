@@ -17,11 +17,11 @@ description:
 
 ## The type vocabulary
 
-`Decision`, `Convention`, `Rule`, `Architecture`, `Gotcha`, `Reference`,
-`Research`, `Plan`, `Folder`. Suggested, never enforced. `Rule` was added after
-a test agent had no label for a compliance requirement and hesitated between
-`Convention` and `Gotcha`: a rule is imposed on the project, a convention is
-chosen by it.
+[format.md](../../../skill/context-db/prompts/format.md) lists the types. They
+are suggested, never enforced. `Rule` was added after a test agent had no
+label for a compliance requirement and hesitated between `Convention` and
+`Gotcha`: a rule is imposed from outside, a convention is chosen by the
+project.
 
 ## Frontmatter must survive a real YAML parser
 

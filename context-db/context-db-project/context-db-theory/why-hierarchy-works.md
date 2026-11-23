@@ -5,6 +5,8 @@ description:
   disclosure, information foraging, and description quality
 ---
 
+# Why hierarchy works
+
 ## The core claim
 
 A hierarchy of folders with 5–10 items each gives logarithmic search time. An

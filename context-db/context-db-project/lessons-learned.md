@@ -2,9 +2,8 @@
 type: Gotcha
 description:
   Prompt-writing lessons from building context delivery — late-session recall,
-  why not to pre-load, rules last and instruction last, testing a prompt on a
-  fresh agent, single-quoting instructions, defining every term, keeping what
-  the script prints in step with the core texts, cwd-relative paths. Read before
+  rules last and instruction last, testing a prompt on a fresh agent, defining
+  every term, measuring the whole message, cwd-relative paths. Read before
   editing anything under skill/context-db/prompts/.
 ---
 
@@ -77,9 +76,6 @@ Before adding wording to the script, read it next to `navigate.md` and
 The same trial showed that a section which introduces a new kind of folder must
 name the command for it. "Look into one the way How to Navigate Context-db
 says" left the agent guessing whether `toc` works outside `context-db/`.
-
-Still open from those trials, in `SKILL.md`: it does not say whether a
-multi-line instruction keeps its line breaks.
 
 ## Configure is a menu, not a form
 

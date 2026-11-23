@@ -5,6 +5,8 @@ description:
   before writing instructions — counters LLM action bias from RLHF
 ---
 
+# Gate before action
+
 LLMs have an action bias: RLHF rewards producing output, so "nothing to do"
 feels like failure to the model. When a command like `/context-db update` runs,
 the model is primed to write something even when there's genuinely nothing to
